@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { BookOpen, Users, BarChart3, Settings, User } from "lucide-react";
+import { BookOpen, Users, BarChart3, Settings, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,6 +14,20 @@ interface LayoutProps {
 }
 
 export const Layout = ({ children, userType, activeView, onViewChange }: LayoutProps) => {
+  const { signOut, user } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive",
+      });
+    }
+  };
+
   const teacherNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'generate-code', label: 'Generate Code', icon: BookOpen },
@@ -45,8 +61,11 @@ export const Layout = ({ children, userType, activeView, onViewChange }: LayoutP
               <Badge variant="secondary" className="capitalize">
                 {userType}
               </Badge>
-              <Button variant="ghost" size="icon">
-                <User className="w-5 h-5" />
+              <span className="text-sm text-muted-foreground hidden md:block">
+                {user?.email}
+              </span>
+              <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                <LogOut className="w-5 h-5" />
               </Button>
             </div>
           </div>
