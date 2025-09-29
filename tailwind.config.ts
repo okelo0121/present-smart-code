@@ -47,6 +47,14 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        education: {
+          primary: "hsl(var(--education-primary))",
+          "primary-dark": "hsl(var(--education-primary-dark))",
+          secondary: "hsl(var(--education-secondary))",
+          success: "hsl(var(--education-success))",
+          warning: "hsl(var(--education-warning))",
+          info: "hsl(var(--education-info))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -57,6 +65,21 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+      },
+      backgroundImage: {
+        "gradient-primary": "var(--gradient-primary)",
+        "gradient-secondary": "var(--gradient-secondary)",
+        "gradient-hero": "var(--gradient-hero)",
+        "gradient-card": "var(--gradient-card)",
+      },
+      boxShadow: {
+        soft: "var(--shadow-soft)",
+        medium: "var(--shadow-medium)",
+        large: "var(--shadow-large)",
+      },
+      transitionTimingFunction: {
+        smooth: "var(--transition-smooth)",
+        bounce: "var(--transition-bounce)",
       },
       borderRadius: {
         lg: "var(--radius)",
