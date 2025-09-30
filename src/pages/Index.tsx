@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { UserTypeSelector } from "@/components/UserTypeSelector";
+import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { TeacherDashboard } from "@/components/TeacherDashboard";
 import { StudentInterface } from "@/components/StudentInterface";
@@ -11,6 +11,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [userType, setUserType] = useState<'teacher' | 'student' | null>(null);
   const [activeView, setActiveView] = useState('dashboard');
+  const [checkingRole, setCheckingRole] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -18,7 +19,49 @@ const Index = () => {
     }
   }, [user, loading, navigate]);
 
-  if (loading) {
+  useEffect(() => {
+    const checkUserRole = async () => {
+      if (!user) return;
+      
+      setCheckingRole(true);
+      
+      // Check if user is a teacher
+      const { data: teacherData } = await supabase
+        .from('app_b3583718a0_teachers')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (teacherData) {
+        setUserType('teacher');
+        setCheckingRole(false);
+        return;
+      }
+      
+      // Check if user is a student
+      const { data: studentData } = await supabase
+        .from('app_b3583718a0_students')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (studentData) {
+        setUserType('student');
+        setCheckingRole(false);
+        return;
+      }
+      
+      // If neither, they're a new teacher who just signed up
+      setUserType('teacher');
+      setCheckingRole(false);
+    };
+    
+    if (user && !userType) {
+      checkUserRole();
+    }
+  }, [user, userType]);
+
+  if (loading || checkingRole) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-accent/20 flex items-center justify-center">
         <div className="text-center">
@@ -29,12 +72,8 @@ const Index = () => {
     );
   }
 
-  if (!user) {
+  if (!user || !userType) {
     return null;
-  }
-
-  if (!userType) {
-    return <UserTypeSelector onSelectUserType={setUserType} />;
   }
 
   // Set default view based on user type
