@@ -13,7 +13,6 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [userType, setUserType] = useState<'teacher' | 'student'>('student');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   
@@ -51,7 +50,7 @@ const Auth = () => {
           return;
         }
         
-        const { error } = await signUp(email, password, { name, userType });
+        const { error } = await signUp(email, password, { name, userType: 'teacher' });
         if (error) {
           toast({
             title: "Sign Up Error", 
@@ -60,8 +59,8 @@ const Auth = () => {
           });
         } else {
           toast({
-            title: "Account Created",
-            description: "Please check your email to verify your account",
+            title: "Teacher Account Created",
+            description: "Please check your email to verify your account. You can then invite students to your classes.",
           });
         }
       }
@@ -84,10 +83,10 @@ const Auth = () => {
             <BookOpen className="w-8 h-8 text-white" />
           </div>
           <CardTitle className="text-2xl">
-            {isLogin ? "Welcome Back" : "Create Account"}
+            {isLogin ? "Welcome Back" : "Create Teacher Account"}
           </CardTitle>
           <p className="text-muted-foreground">
-            {isLogin ? "Sign in to your EduTrack account" : "Join the EduTrack system"}
+            {isLogin ? "Sign in to your EduTrack account" : "Sign up as a teacher to manage your classes"}
           </p>
         </CardHeader>
         
@@ -105,28 +104,6 @@ const Auth = () => {
                     required
                     placeholder="Enter your full name"
                   />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Account Type</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      type="button"
-                      variant={userType === 'student' ? 'default' : 'outline'}
-                      onClick={() => setUserType('student')}
-                      className="w-full"
-                    >
-                      Student
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={userType === 'teacher' ? 'default' : 'outline'}
-                      onClick={() => setUserType('teacher')}
-                      className="w-full"
-                    >
-                      Teacher
-                    </Button>
-                  </div>
                 </div>
               </>
             )}
