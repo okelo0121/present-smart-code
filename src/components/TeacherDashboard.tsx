@@ -14,6 +14,7 @@ import {
   Calendar
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { InviteStudentForm } from "./InviteStudentForm";
 
 interface TeacherDashboardProps {
   activeView: string;
@@ -87,6 +88,68 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
+
+  if (activeView === 'invite-students') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-foreground">Invite Students</h2>
+          <Badge variant="outline" className="text-education-info border-education-info">
+            Computer Science Department
+          </Badge>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <InviteStudentForm />
+          
+          <Card className="bg-gradient-card">
+            <CardHeader>
+              <CardTitle>How It Works</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 rounded-full bg-education-primary text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    1
+                  </div>
+                  <div>
+                    <p className="font-medium">Enter Student Details</p>
+                    <p className="text-sm text-muted-foreground">Fill in the student's name, email, class, and department</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 rounded-full bg-education-secondary text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    2
+                  </div>
+                  <div>
+                    <p className="font-medium">Invitation Email Sent</p>
+                    <p className="text-sm text-muted-foreground">The student receives a personalized invitation email with access instructions</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 rounded-full bg-education-success text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    3
+                  </div>
+                  <div>
+                    <p className="font-medium">Student Gets Access</p>
+                    <p className="text-sm text-muted-foreground">Students click the link to access the system and start marking attendance</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 bg-education-info/10 border border-education-info/20 rounded-lg">
+                <p className="text-sm">
+                  <strong>Note:</strong> Students will be added to your class and can immediately start marking attendance once they access the system.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (activeView === 'generate-code') {
     return (

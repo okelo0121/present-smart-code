@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookOpen, Users, BarChart3, Settings, User, LogOut } from "lucide-react";
+import { BookOpen, Users, BarChart3, Settings, User, LogOut, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,7 @@ export const Layout = ({ children, userType, activeView, onViewChange }: LayoutP
   const teacherNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'generate-code', label: 'Generate Code', icon: BookOpen },
+    { id: 'invite-students', label: 'Invite Students', icon: UserPlus },
     { id: 'students', label: 'Students', icon: Users },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
   ];
