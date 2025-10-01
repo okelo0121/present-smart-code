@@ -56,10 +56,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { studentName, studentEmail, className, department }: InviteRequest = await req.json();
 
-    // Generate a temporary UUID for the student (will be updated when they sign up)
-    const tempUserId = crypto.randomUUID();
-    
-    // Create student record
+    // Create student record (user_id will be null until student signs up)
     const { data: newStudent, error: studentError } = await supabase
       .from("app_b3583718a0_students")
       .insert({
@@ -68,7 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
         class: className,
         department: department,
         teacher_id: teacher.id,
-        user_id: tempUserId,
+        user_id: null,
       })
       .select()
       .single();
