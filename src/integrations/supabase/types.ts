@@ -94,7 +94,7 @@ export type Database = {
           id: string
           name: string
           teacher_id: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           class: string
@@ -104,7 +104,7 @@ export type Database = {
           id?: string
           name: string
           teacher_id: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           class?: string
@@ -114,7 +114,7 @@ export type Database = {
           id?: string
           name?: string
           teacher_id?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
