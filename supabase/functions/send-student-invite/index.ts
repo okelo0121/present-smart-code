@@ -138,7 +138,13 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Invitation sent successfully:", emailResponse);
+    console.log("Email response:", emailResponse);
+
+    // Check if email sending failed
+    if (emailResponse.error) {
+      console.error("Resend error:", emailResponse.error);
+      throw new Error(`Failed to send email: ${emailResponse.error.message}`);
+    }
 
     return new Response(
       JSON.stringify({ 
