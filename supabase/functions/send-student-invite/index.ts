@@ -75,8 +75,8 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Failed to create student record");
     }
 
-    // Generate invitation link - use the frontend URL
-    const inviteLink = `${req.headers.get("origin") || "https://nllpxugnekhilifkfjox.supabase.co"}/auth`;
+    // Generate invitation link with student email for auto-fill
+    const inviteLink = `${req.headers.get("origin") || "https://nllpxugnekhilifkfjox.supabase.co"}/auth?email=${encodeURIComponent(studentEmail)}&type=student`;
 
     // Send invitation email
     const emailResponse = await resend.emails.send({
@@ -113,14 +113,14 @@ const handler = async (req: Request): Promise<Response> => {
                   Teacher: ${teacher.name}
                 </div>
 
-                <p>Click the button below to access the system and start tracking your attendance:</p>
+                <p>Click the button below to create your account and start tracking your attendance:</p>
                 
                 <center>
-                  <a href="${inviteLink}" class="button">Access EduTrack</a>
+                  <a href="${inviteLink}" class="button">Create Student Account</a>
                 </center>
 
                 <p style="margin-top: 20px; font-size: 14px; color: #666;">
-                  You'll be able to:
+                  After creating your account, you'll be able to:
                   <ul>
                     <li>Submit attendance using time-sensitive codes</li>
                     <li>View your attendance history</li>

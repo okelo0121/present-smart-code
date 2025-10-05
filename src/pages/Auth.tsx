@@ -15,10 +15,24 @@ const Auth = () => {
   const [name, setName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isStudentSignup, setIsStudentSignup] = useState(false);
   
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Check if this is a student invitation
+    const params = new URLSearchParams(window.location.search);
+    const emailParam = params.get('email');
+    const typeParam = params.get('type');
+    
+    if (emailParam && typeParam === 'student') {
+      setEmail(emailParam);
+      setIsLogin(false);
+      setIsStudentSignup(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -50,7 +64,8 @@ const Auth = () => {
           return;
         }
         
-        const { error } = await signUp(email, password, { name, userType: 'teacher' });
+        const userType = isStudentSignup ? 'student' : 'teacher';
+        const { error } = await signUp(email, password, { name, userType });
         if (error) {
           toast({
             title: "Sign Up Error", 
@@ -59,8 +74,10 @@ const Auth = () => {
           });
         } else {
           toast({
-            title: "Teacher Account Created",
-            description: "Please check your email to verify your account. You can then invite students to your classes.",
+            title: isStudentSignup ? "Student Account Created" : "Teacher Account Created",
+            description: isStudentSignup 
+              ? "Your account has been created! You can now sign in and track your attendance."
+              : "Please check your email to verify your account. You can then invite students to your classes.",
           });
         }
       }
@@ -83,10 +100,14 @@ const Auth = () => {
             <BookOpen className="w-8 h-8 text-white" />
           </div>
           <CardTitle className="text-2xl">
-            {isLogin ? "Welcome Back" : "Create Teacher Account"}
+            {isLogin ? "Welcome Back" : (isStudentSignup ? "Create Student Account" : "Create Teacher Account")}
           </CardTitle>
           <p className="text-muted-foreground">
-            {isLogin ? "Sign in to your EduTrack account" : "Sign up as a teacher to manage your classes"}
+            {isLogin 
+              ? "Sign in to your EduTrack account" 
+              : (isStudentSignup 
+                  ? "Complete your student registration to track attendance" 
+                  : "Sign up as a teacher to manage your classes")}
           </p>
         </CardHeader>
         
@@ -117,6 +138,7 @@ const Auth = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="Enter your email"
+                disabled={isStudentSignup}
               />
             </div>
             
@@ -152,15 +174,17 @@ const Auth = () => {
             </Button>
           </form>
           
-          <div className="text-center">
-            <button
-              type="button"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => setIsLogin(!isLogin)}
-            >
-              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-            </button>
-          </div>
+          {!isStudentSignup && (
+            <div className="text-center">
+              <button
+                type="button"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setIsLogin(!isLogin)}
+              >
+                {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+              </button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
