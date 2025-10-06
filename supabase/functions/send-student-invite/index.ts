@@ -56,23 +56,56 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { studentName, studentEmail, className, department }: InviteRequest = await req.json();
 
-    // Create student record (user_id will be null until student signs up)
-    const { data: newStudent, error: studentError } = await supabase
+    // Check if student already exists
+    const { data: existingStudent } = await supabase
       .from("app_b3583718a0_students")
-      .insert({
-        name: studentName,
-        email: studentEmail,
-        class: className,
-        department: department,
-        teacher_id: teacher.id,
-        user_id: null,
-      })
-      .select()
-      .single();
+      .select("*")
+      .eq("email", studentEmail)
+      .maybeSingle();
 
-    if (studentError) {
-      console.error("Error creating student:", studentError);
-      throw new Error("Failed to create student record");
+    let student;
+    
+    if (existingStudent) {
+      // Update existing student record
+      const { data: updatedStudent, error: updateError } = await supabase
+        .from("app_b3583718a0_students")
+        .update({
+          name: studentName,
+          class: className,
+          department: department,
+          teacher_id: teacher.id,
+        })
+        .eq("email", studentEmail)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error("Error updating student:", updateError);
+        throw new Error("Failed to update student record");
+      }
+      student = updatedStudent;
+      console.log("Updated existing student:", student);
+    } else {
+      // Create new student record (user_id will be null until student signs up)
+      const { data: newStudent, error: studentError } = await supabase
+        .from("app_b3583718a0_students")
+        .insert({
+          name: studentName,
+          email: studentEmail,
+          class: className,
+          department: department,
+          teacher_id: teacher.id,
+          user_id: null,
+        })
+        .select()
+        .single();
+
+      if (studentError) {
+        console.error("Error creating student:", studentError);
+        throw new Error("Failed to create student record");
+      }
+      student = newStudent;
+      console.log("Created new student:", student);
     }
 
     // Generate invitation link with student email for auto-fill
@@ -152,8 +185,8 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Student invited successfully",
-        student: newStudent 
+        message: existingStudent ? "Student re-invited successfully" : "Student invited successfully",
+        student: student 
       }),
       {
         status: 200,
