@@ -77,12 +77,12 @@ const Auth = () => {
             variant: "destructive",
           });
         } else {
-          // Account created successfully - switch to login mode
+          // Account created successfully
           toast({
-            title: "Account Created Successfully!",
-            description: "You can now sign in with your credentials.",
+            title: "Account Created!",
+            description: "Please check your email to confirm your account before signing in. Check your spam folder if you don't see it.",
+            duration: 8000,
           });
-          setIsLogin(true);
           setPassword(""); // Clear password for security
         }
       }
