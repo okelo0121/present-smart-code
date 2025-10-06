@@ -71,13 +71,21 @@ const Auth = () => {
         const userType = isStudentSignup ? 'student' : 'teacher';
         const { error } = await signUp(email, password, { name, userType });
         if (error) {
-          toast({
-            title: "Sign Up Error", 
-            description: error.message,
-            variant: "destructive",
-          });
+          // Check if user already exists
+          if (error.message.includes("already registered") || error.message.includes("already been registered")) {
+            toast({
+              title: "Account Already Exists", 
+              description: "This email is already registered. If you haven't confirmed your email yet, please check your inbox (and spam folder). A new confirmation email has been sent.",
+              duration: 10000,
+            });
+          } else {
+            toast({
+              title: "Sign Up Error", 
+              description: error.message,
+              variant: "destructive",
+            });
+          }
         } else {
-          // Account created successfully
           toast({
             title: "Account Created!",
             description: "Please check your email to confirm your account before signing in. Check your spam folder if you don't see it.",
