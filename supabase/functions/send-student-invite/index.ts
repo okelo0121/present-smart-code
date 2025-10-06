@@ -76,7 +76,10 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Generate invitation link with student email for auto-fill
-    const inviteLink = `${req.headers.get("origin") || "https://nllpxugnekhilifkfjox.supabase.co"}/auth?email=${encodeURIComponent(studentEmail)}&type=student`;
+    const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, '') || "https://8399a5db-9206-4a4d-8ef0-dd86b7b0ee48.lovableproject.com";
+    const inviteLink = `${origin}/auth?email=${encodeURIComponent(studentEmail)}&type=student`;
+    
+    console.log("Generated invite link:", inviteLink);
 
     // Send invitation email
     const emailResponse = await resend.emails.send({
