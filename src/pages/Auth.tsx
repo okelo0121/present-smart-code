@@ -48,9 +48,13 @@ const Auth = () => {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
+          const errorMessage = error.message.includes("Invalid login credentials") 
+            ? "Invalid email or password. If you just signed up, please make sure you're using the correct credentials."
+            : error.message;
+          
           toast({
             title: "Sign In Error",
-            description: error.message,
+            description: errorMessage,
             variant: "destructive",
           });
         }
@@ -73,12 +77,13 @@ const Auth = () => {
             variant: "destructive",
           });
         } else {
+          // Account created successfully - switch to login mode
           toast({
-            title: isStudentSignup ? "Student Account Created" : "Teacher Account Created",
-            description: isStudentSignup 
-              ? "Your account has been created! You can now sign in and track your attendance."
-              : "Please check your email to verify your account. You can then invite students to your classes.",
+            title: "Account Created Successfully!",
+            description: "You can now sign in with your credentials.",
           });
+          setIsLogin(true);
+          setPassword(""); // Clear password for security
         }
       }
     } catch (error) {
