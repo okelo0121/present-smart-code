@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { InviteStudentForm } from "./InviteStudentForm";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TeacherDashboardProps {
   activeView: string;
@@ -24,24 +26,123 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
   const [currentCode, setCurrentCode] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [studentsPresent, setStudentsPresent] = useState(0);
+  const [totalStudents, setTotalStudents] = useState(0);
+  const [teacherData, setTeacherData] = useState<any>(null);
+  const [attendanceData, setAttendanceData] = useState<any[]>([]);
+  const [studentsByClass, setStudentsByClass] = useState<Record<string, number>>({});
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  // Mock data
-  const totalStudents = 35;
-  const attendanceRate = Math.round((studentsPresent / totalStudents) * 100);
+  const attendanceRate = totalStudents > 0 ? Math.round((studentsPresent / totalStudents) * 100) : 0;
 
-  const mockAttendanceData = [
-    { date: "Mon, Oct 21", present: 32, absent: 3, rate: 91 },
-    { date: "Tue, Oct 22", present: 28, absent: 7, rate: 80 },
-    { date: "Wed, Oct 23", present: 35, absent: 0, rate: 100 },
-    { date: "Thu, Oct 24", present: 30, absent: 5, rate: 86 },
-    { date: "Today", present: studentsPresent, absent: totalStudents - studentsPresent, rate: attendanceRate },
-  ];
+  // Fetch teacher data and students
+  useEffect(() => {
+    const fetchTeacherData = async () => {
+      if (!user) return;
 
-  const generateCode = () => {
+      const { data: teacher, error: teacherError } = await supabase
+        .from('app_b3583718a0_teachers')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (teacherError) {
+        console.error('Error fetching teacher:', teacherError);
+        return;
+      }
+
+      setTeacherData(teacher);
+
+      // Fetch students for this teacher
+      const { data: students, error: studentsError } = await supabase
+        .from('app_b3583718a0_students')
+        .select('*')
+        .eq('teacher_id', teacher.id);
+
+      if (studentsError) {
+        console.error('Error fetching students:', studentsError);
+        return;
+      }
+
+      setTotalStudents(students?.length || 0);
+
+      // Count students by class
+      const classCounts: Record<string, number> = {};
+      students?.forEach(student => {
+        classCounts[student.class] = (classCounts[student.class] || 0) + 1;
+      });
+      setStudentsByClass(classCounts);
+
+      // Fetch attendance records for the last 7 days
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const { data: codes } = await supabase
+        .from('app_b3583718a0_attendance_codes')
+        .select('id, code, class, created_at')
+        .eq('teacher_id', teacher.id)
+        .gte('created_at', sevenDaysAgo.toISOString())
+        .order('created_at', { ascending: false });
+
+      if (codes) {
+        const attendanceByDay: Record<string, { present: number; total: number; date: string }> = {};
+
+        for (const code of codes) {
+          const dateKey = new Date(code.created_at).toLocaleDateString();
+          
+          if (!attendanceByDay[dateKey]) {
+            attendanceByDay[dateKey] = { present: 0, total: students?.length || 0, date: dateKey };
+          }
+
+          const { data: records } = await supabase
+            .from('app_b3583718a0_attendance_records')
+            .select('student_id')
+            .eq('code_id', code.id);
+
+          attendanceByDay[dateKey].present += records?.length || 0;
+        }
+
+        const formattedData = Object.values(attendanceByDay).map(day => ({
+          date: day.date,
+          present: day.present,
+          absent: day.total - day.present,
+          rate: day.total > 0 ? Math.round((day.present / day.total) * 100) : 0
+        }));
+
+        setAttendanceData(formattedData);
+      }
+    };
+
+    fetchTeacherData();
+  }, [user]);
+
+  const generateCode = async () => {
+    if (!teacherData) return;
+
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 2);
+
+    const { error } = await supabase
+      .from('app_b3583718a0_attendance_codes')
+      .insert({
+        code,
+        teacher_id: teacherData.id,
+        class: teacherData.department,
+        expires_at: expiresAt.toISOString()
+      });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate code",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setCurrentCode(code);
-    setTimeLeft(120); // 2 minutes
+    setTimeLeft(120);
     setStudentsPresent(0);
     
     toast({
@@ -71,17 +172,49 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
     return () => clearInterval(interval);
   }, [timeLeft, toast]);
 
-  // Simulate students entering code
+  // Listen to real-time attendance submissions
   useEffect(() => {
-    if (currentCode && timeLeft > 0) {
-      const simulateEntries = setInterval(() => {
-        if (Math.random() > 0.7 && studentsPresent < totalStudents) {
-          setStudentsPresent(prev => Math.min(prev + 1, totalStudents));
+    if (!currentCode || !teacherData) return;
+
+    const fetchCurrentAttendance = async () => {
+      const { data: codeData } = await supabase
+        .from('app_b3583718a0_attendance_codes')
+        .select('id')
+        .eq('code', currentCode)
+        .eq('teacher_id', teacherData.id)
+        .single();
+
+      if (codeData) {
+        const { data: records } = await supabase
+          .from('app_b3583718a0_attendance_records')
+          .select('id')
+          .eq('code_id', codeData.id);
+
+        setStudentsPresent(records?.length || 0);
+      }
+    };
+
+    fetchCurrentAttendance();
+
+    const channel = supabase
+      .channel('attendance-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'app_b3583718a0_attendance_records'
+        },
+        () => {
+          fetchCurrentAttendance();
         }
-      }, 3000);
-      return () => clearInterval(simulateEntries);
-    }
-  }, [currentCode, timeLeft, studentsPresent, totalStudents]);
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentCode, teacherData]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -313,46 +446,88 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
         </Card>
       </div>
 
-      {/* Weekly Attendance Overview */}
+      {/* Students by Class */}
+      <Card className="bg-gradient-card">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Users className="w-5 h-5 text-education-primary" />
+            <span>Students by Class</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {Object.entries(studentsByClass).length > 0 ? (
+              Object.entries(studentsByClass).map(([className, count]) => (
+                <div key={className} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-full bg-education-primary/10 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-education-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{className}</p>
+                      <p className="text-sm text-muted-foreground">{count} students</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-education-primary">
+                    {count}
+                  </Badge>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-muted-foreground py-4">
+                No students yet. Start by inviting students to your classes.
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Attendance Reports */}
       <Card className="bg-gradient-card">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Calendar className="w-5 h-5 text-education-primary" />
-            <span>This Week's Attendance</span>
+            <span>Recent Attendance Reports</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {mockAttendanceData.map((day, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div>
-                    <p className="font-medium">{day.date}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {day.present} present, {day.absent} absent
-                    </p>
+            {attendanceData.length > 0 ? (
+              attendanceData.map((day, index) => (
+                <div key={index} className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div>
+                      <p className="font-medium">{day.date}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {day.present} present, {day.absent} absent
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right">
+                      <p className="font-medium">{day.rate}%</p>
+                      <Progress value={day.rate} className="w-20" />
+                    </div>
+                    <Badge 
+                      variant={day.rate >= 90 ? "default" : day.rate >= 80 ? "secondary" : "destructive"}
+                      className={
+                        day.rate >= 90 
+                          ? "bg-education-success" 
+                          : day.rate >= 80 
+                          ? "bg-education-warning" 
+                          : ""
+                      }
+                    >
+                      {day.rate >= 90 ? "Excellent" : day.rate >= 80 ? "Good" : "Needs Attention"}
+                    </Badge>
                   </div>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <p className="font-medium">{day.rate}%</p>
-                    <Progress value={day.rate} className="w-20" />
-                  </div>
-                  <Badge 
-                    variant={day.rate >= 90 ? "default" : day.rate >= 80 ? "secondary" : "destructive"}
-                    className={
-                      day.rate >= 90 
-                        ? "bg-education-success" 
-                        : day.rate >= 80 
-                        ? "bg-education-warning" 
-                        : ""
-                    }
-                  >
-                    {day.rate >= 90 ? "Excellent" : day.rate >= 80 ? "Good" : "Needs Attention"}
-                  </Badge>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-center text-muted-foreground py-4">
+                No attendance records yet. Generate a code to start tracking attendance.
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
