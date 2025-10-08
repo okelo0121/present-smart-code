@@ -91,6 +91,8 @@ const Auth = () => {
             description: "Please check your email to confirm your account before signing in. Check your spam folder if you don't see it.",
             duration: 8000,
           });
+          // Switch to login mode after successful signup
+          setIsLogin(true);
           setPassword(""); // Clear password for security
         }
       }
