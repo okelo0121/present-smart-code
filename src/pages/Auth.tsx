@@ -49,13 +49,14 @@ const Auth = () => {
         const { error } = await signIn(email, password);
         if (error) {
           const errorMessage = error.message.includes("Invalid login credentials") 
-            ? "Invalid email or password. If you just signed up, please make sure you're using the correct credentials."
+            ? "Invalid email or password. If you just signed up, please confirm your email first (check your inbox and spam folder). You must verify your email before signing in."
             : error.message;
           
           toast({
             title: "Sign In Error",
             description: errorMessage,
             variant: "destructive",
+            duration: 8000,
           });
         }
       } else {
