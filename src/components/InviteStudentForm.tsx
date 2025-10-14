@@ -36,8 +36,10 @@ export const InviteStudentForm = () => {
       }
 
       toast({
-        title: "Invitation Sent!",
-        description: `An invitation email has been sent to ${studentEmail}`,
+        title: "Student Invited!",
+        description: data?.inviteLink
+          ? `Student record created. Share this link: ${data.inviteLink}`
+          : `Student ${studentEmail} has been invited successfully`,
       });
 
       // Reset form
@@ -47,18 +49,13 @@ export const InviteStudentForm = () => {
       setDepartment("");
     } catch (error: any) {
       console.error("Error sending invitation:", error);
-      
-      // Check if it's a Resend test mode error
+
       const errorMessage = error.message || "Failed to send invitation";
-      const isResendTestMode = errorMessage.includes("testing emails") || errorMessage.includes("verify a domain");
-      
+
       toast({
-        title: isResendTestMode ? "Resend Test Mode Active" : "Error",
-        description: isResendTestMode 
-          ? "Resend is in test mode. You can only invite your own email address. To invite other students, verify a domain at resend.com/domains" 
-          : errorMessage,
+        title: "Error",
+        description: errorMessage,
         variant: "destructive",
-        duration: isResendTestMode ? 10000 : 5000,
       });
     } finally {
       setLoading(false);
@@ -72,12 +69,6 @@ export const InviteStudentForm = () => {
           <UserPlus className="w-5 h-5 text-education-primary" />
           <span>Invite Student</span>
         </CardTitle>
-        <p className="text-sm text-muted-foreground mt-2">
-          ⚠️ Resend is in test mode - only your verified email can receive invitations. 
-          <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline ml-1">
-            Verify a domain
-          </a> to invite other students.
-        </p>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleInvite} className="space-y-4">
