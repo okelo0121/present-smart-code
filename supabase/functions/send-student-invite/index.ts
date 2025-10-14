@@ -1,6 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.38.4";
 
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -144,6 +146,108 @@ Deno.serve(async (req: Request) => {
 
     const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, '') || "https://8399a5db-9206-4a4d-8ef0-dd86b7b0ee48.lovableproject.com";
     const inviteLink = `${origin}/auth?email=${encodeURIComponent(studentEmail)}&type=student`;
+
+    if (RESEND_API_KEY) {
+      try {
+        const emailHtml = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+                .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+                .button { display: inline-block; background: #667eea; color: white !important; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+                .details { background: white; padding: 15px; border-radius: 5px; margin: 20px 0; }
+                .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>Welcome to EduTrack!</h1>
+                </div>
+                <div class="content">
+                  <p>Hi ${studentName},</p>
+                  <p>${teacher.name} has invited you to join their class on EduTrack, a modern attendance tracking system.</p>
+
+                  <div class="details">
+                    <strong>Class Details:</strong><br>
+                    Class: ${className}<br>
+                    Department: ${department}<br>
+                    Teacher: ${teacher.name}
+                  </div>
+
+                  <p>Click the button below to create your account and start tracking your attendance:</p>
+
+                  <center>
+                    <a href="${inviteLink}" class="button">Create Student Account</a>
+                  </center>
+
+                  <p style="margin-top: 20px; font-size: 14px; color: #666;">
+                    After creating your account, you'll be able to:
+                    <ul>
+                      <li>Submit attendance using time-sensitive codes</li>
+                      <li>View your attendance history</li>
+                      <li>Track your attendance statistics</li>
+                    </ul>
+                  </p>
+
+                  <div class="footer">
+                    <p>If you didn't expect this invitation, please ignore this email.</p>
+                  </div>
+                </div>
+              </div>
+            </body>
+          </html>
+        `;
+
+        const emailResponse = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: "EduTrack <onboarding@resend.dev>",
+            to: [studentEmail],
+            subject: `You've been invited to join ${className} on EduTrack`,
+            html: emailHtml,
+          }),
+        });
+
+        const emailData = await emailResponse.json();
+
+        if (!emailResponse.ok) {
+          console.error("Failed to send email:", emailData);
+          return new Response(
+            JSON.stringify({
+              error: emailData.message || "Failed to send email",
+              details: emailData
+            }),
+            {
+              status: 500,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            }
+          );
+        }
+
+        console.log("Email sent successfully:", emailData);
+      } catch (emailError: any) {
+        console.error("Error sending email:", emailError);
+        return new Response(
+          JSON.stringify({
+            error: "Failed to send invitation email",
+            details: emailError.message
+          }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+    }
 
     return new Response(
       JSON.stringify({

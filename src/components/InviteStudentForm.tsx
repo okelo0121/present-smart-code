@@ -36,10 +36,8 @@ export const InviteStudentForm = () => {
       }
 
       toast({
-        title: "Student Invited!",
-        description: data?.inviteLink
-          ? `Student record created. Share this link: ${data.inviteLink}`
-          : `Student ${studentEmail} has been invited successfully`,
+        title: "Invitation Sent!",
+        description: `An invitation email has been sent to ${studentEmail}`,
       });
 
       // Reset form
