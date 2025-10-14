@@ -47,7 +47,6 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
         .single();
 
       if (teacherError) {
-        console.error('Error fetching teacher:', teacherError);
         return;
       }
 
@@ -60,7 +59,6 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
         .eq('teacher_id', teacher.id);
 
       if (studentsError) {
-        console.error('Error fetching students:', studentsError);
         return;
       }
 

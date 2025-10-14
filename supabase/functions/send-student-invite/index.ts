@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -17,6 +18,13 @@ interface InviteRequest {
   department: string;
   teacherName: string;
 }
+
+const InviteSchema = z.object({
+  studentName: z.string().trim().min(1, "Student name is required").max(100, "Student name too long"),
+  studentEmail: z.string().email("Invalid email format").max(255, "Email too long"),
+  className: z.string().trim().min(1, "Class name is required").max(100, "Class name too long"),
+  department: z.string().trim().min(1, "Department is required").max(100, "Department too long"),
+});
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -54,7 +62,24 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Only teachers can send invitations");
     }
 
-    const { studentName, studentEmail, className, department }: InviteRequest = await req.json();
+    const requestBody = await req.json();
+    
+    // Validate input
+    const validationResult = InviteSchema.safeParse(requestBody);
+    if (!validationResult.success) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid input data",
+          details: validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const { studentName, studentEmail, className, department } = validationResult.data;
 
     // Check if student already exists
     const { data: existingStudent } = await supabase
@@ -84,7 +109,6 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error("Failed to update student record");
       }
       student = updatedStudent;
-      console.log("Updated existing student:", student);
     } else {
       // Create new student record (user_id will be null until student signs up)
       const { data: newStudent, error: studentError } = await supabase
@@ -105,14 +129,11 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error("Failed to create student record");
       }
       student = newStudent;
-      console.log("Created new student:", student);
     }
 
     // Generate invitation link with student email for auto-fill
     const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, '') || "https://8399a5db-9206-4a4d-8ef0-dd86b7b0ee48.lovableproject.com";
     const inviteLink = `${origin}/auth?email=${encodeURIComponent(studentEmail)}&type=student`;
-    
-    console.log("Generated invite link:", inviteLink);
 
     // Send invitation email
     const emailResponse = await resend.emails.send({
@@ -173,8 +194,6 @@ const handler = async (req: Request): Promise<Response> => {
         </html>
       `,
     });
-
-    console.log("Email response:", emailResponse);
 
     // Check if email sending failed
     if (emailResponse.error) {
