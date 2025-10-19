@@ -147,11 +147,10 @@ Deno.serve(async (req: Request) => {
     const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, '') || "https://8399a5db-9206-4a4d-8ef0-dd86b7b0ee48.lovableproject.com";
     const inviteLink = `${origin}/auth?email=${encodeURIComponent(studentEmail)}&type=student`;
 
-    if (RESEND_API_KEY) {
-      try {
-        const emailHtml = `
-          <!DOCTYPE html>
-          <html>
+    try {
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html>
             <head>
               <style>
                 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
@@ -247,7 +246,6 @@ Deno.serve(async (req: Request) => {
           }
         );
       }
-    }
 
     return new Response(
       JSON.stringify({
