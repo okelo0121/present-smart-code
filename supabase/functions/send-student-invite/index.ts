@@ -1,7 +1,14 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.38.4";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+
+const InviteSchema = z.object({
+  studentName: z.string().trim().min(1, "Name is required").max(100, "Name too long"),
+  studentEmail: z.string().email("Invalid email").max(255, "Email too long"),
+  className: z.string().trim().min(1, "Class is required").max(100, "Class name too long"),
+  department: z.string().trim().min(1, "Department is required").max(100, "Department name too long"),
+});
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,17 +80,27 @@ Deno.serve(async (req: Request) => {
 
     const requestBody = await req.json();
 
-    const { studentName, studentEmail, className, department } = requestBody;
-
-    if (!studentName || !studentEmail || !className || !department) {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+    // Validate input data
+    let validated;
+    try {
+      validated = InviteSchema.parse(requestBody);
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return new Response(
+          JSON.stringify({ 
+            error: "Invalid input data", 
+            details: validationError.errors.map(e => e.message).join(", ")
+          }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+      throw validationError;
     }
+
+    const { studentName, studentEmail, className, department } = validated;
 
     const { data: existingStudent } = await supabase
       .from("app_b3583718a0_students")
