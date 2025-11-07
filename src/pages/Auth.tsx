@@ -23,6 +23,7 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isStudentSignup, setIsStudentSignup] = useState(false);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [passwordValidation, setPasswordValidation] = useState({
     minLength: false,
     hasUppercase: false,
@@ -39,9 +40,11 @@ const Auth = () => {
     const params = new URLSearchParams(window.location.search);
     const emailParam = params.get('email');
     const typeParam = params.get('type');
+    const tokenParam = params.get('token');
     
-    if (emailParam && typeParam === 'student') {
+    if (emailParam && typeParam === 'student' && tokenParam) {
       setEmail(emailParam);
+      setInviteToken(tokenParam);
       setIsLogin(false);
       setIsStudentSignup(true);
     }
@@ -108,7 +111,7 @@ const Auth = () => {
         }
         
         const userType = isStudentSignup ? 'student' : 'teacher';
-        const { error } = await signUp(email, password, { name, userType });
+        const { error } = await signUp(email, password, { name, userType }, inviteToken || undefined);
         if (error) {
           // Check if user already exists
           if (error.message.includes("already registered") || error.message.includes("already been registered")) {
@@ -125,14 +128,25 @@ const Auth = () => {
             });
           }
         } else {
-          toast({
-            title: "Account Created!",
-            description: "Please check your email to confirm your account before signing in. Check your spam folder if you don't see it.",
-            duration: 8000,
-          });
-          // Switch to login mode after successful signup
-          setIsLogin(true);
-          setPassword(""); // Clear password for security
+          if (isStudentSignup && inviteToken) {
+            // Auto-verified students can sign in immediately
+            toast({
+              title: "Account Created!",
+              description: "Your account is ready! Signing you in...",
+              duration: 3000,
+            });
+            // Auto sign-in for invited students
+            await signIn(email, password);
+          } else {
+            toast({
+              title: "Account Created!",
+              description: "Please check your email to confirm your account before signing in. Check your spam folder if you don't see it.",
+              duration: 8000,
+            });
+            // Switch to login mode after successful signup
+            setIsLogin(true);
+            setPassword(""); // Clear password for security
+          }
         }
       }
     } catch (error) {
@@ -160,7 +174,9 @@ const Auth = () => {
             {isLogin 
               ? "Sign in to your EduTrack account" 
               : (isStudentSignup 
-                  ? "Complete your student registration to track attendance" 
+                  ? inviteToken 
+                    ? "Complete your registration - no email verification needed!" 
+                    : "Complete your student registration to track attendance"
                   : "Sign up as a teacher to manage your classes")}
           </p>
         </CardHeader>

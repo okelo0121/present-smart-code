@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  signUp: (email: string, password: string, metadata?: { name: string; userType: 'teacher' | 'student' }) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, metadata?: { name: string; userType: 'teacher' | 'student' }, inviteToken?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
   loading: boolean;
@@ -38,9 +38,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, metadata?: { name: string; userType: 'teacher' | 'student' }) => {
+  const signUp = async (email: string, password: string, metadata?: { name: string; userType: 'teacher' | 'student' }, inviteToken?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
+    // If there's an invite token, verify it first
+    if (inviteToken) {
+      const { data: invite, error: inviteError } = await supabase
+        .from('app_b3583718a0_student_invites')
+        .select('*')
+        .eq('token', inviteToken)
+        .eq('email', email)
+        .eq('used', false)
+        .maybeSingle();
+
+      if (inviteError || !invite) {
+        return { error: { message: 'Invalid or expired invitation link' } };
+      }
+
+      // Check if token is expired
+      if (new Date(invite.expires_at) < new Date()) {
+        return { error: { message: 'This invitation has expired. Please request a new one from your teacher.' } };
+      }
+
+      // Sign up with auto-confirm for invited students
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            ...metadata,
+            email_confirmed: true
+          }
+        }
+      });
+
+      if (!error && data.user) {
+        // Mark token as used
+        await supabase
+          .from('app_b3583718a0_student_invites')
+          .update({ used: true })
+          .eq('token', inviteToken);
+      }
+
+      return { error };
+    }
+    
+    // Regular signup for teachers (requires email verification)
     const { error } = await supabase.auth.signUp({
       email,
       password,

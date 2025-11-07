@@ -161,8 +161,32 @@ Deno.serve(async (req: Request) => {
       student = newStudent;
     }
 
+    // Generate secure invite token
+    const inviteToken = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    // Store the invite token
+    const { error: tokenError } = await supabase
+      .from('app_b3583718a0_student_invites')
+      .insert({
+        email: studentEmail,
+        token: inviteToken,
+        expires_at: expiresAt.toISOString(),
+      });
+
+    if (tokenError) {
+      console.error("Error storing invite token:", tokenError);
+      return new Response(
+        JSON.stringify({ error: "Failed to create invitation" }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, '') || "https://8399a5db-9206-4a4d-8ef0-dd86b7b0ee48.lovableproject.com";
-    const inviteLink = `${origin}/auth?email=${encodeURIComponent(studentEmail)}&type=student`;
+    const inviteLink = `${origin}/auth?email=${encodeURIComponent(studentEmail)}&type=student&token=${inviteToken}`;
 
     try {
       const emailHtml = `
@@ -195,7 +219,7 @@ Deno.serve(async (req: Request) => {
                     Teacher: ${teacher.name}
                   </div>
 
-                  <p>Click the button below to create your account and start tracking your attendance:</p>
+                  <p>Click the button below to create your account and start tracking your attendance. <strong>No email verification needed - you'll get instant access!</strong></p>
 
                   <center>
                     <a href="${inviteLink}" class="button">Create Student Account</a>
@@ -211,7 +235,7 @@ Deno.serve(async (req: Request) => {
                   </p>
 
                   <div class="footer">
-                    <p>If you didn't expect this invitation, please ignore this email.</p>
+                    <p>This invitation link will expire in 7 days. If you didn't expect this invitation, you can safely ignore this email.</p>
                   </div>
                 </div>
               </div>
