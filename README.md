@@ -5,11 +5,6 @@
 EduTrack is a modern, web-based application designed to streamline and automate the process of managing student attendance. This project aims to replace traditional paper-based methods, providing instructors and administrators with an
 efficient, reliable, and data-driven tool to track student presence, generate reports, and manage course rosters.
 
-**Live Demo**
-
-You can access the live demonstration of the project here:
-**[https://edutrack.store](www.edutrack.store)**
-
 ---
 
 ## ⚠️ Important: Reviewer's Guide & Demo Limitations
