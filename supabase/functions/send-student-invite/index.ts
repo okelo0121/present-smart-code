@@ -250,7 +250,7 @@ Deno.serve(async (req: Request) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "EduTrack <onboarding@resend.dev>",
+            from: "EduTrack <noreply@edutrack.store>",
             to: [studentEmail],
             subject: `You've been invited to join ${className} on EduTrack`,
             html: emailHtml,
