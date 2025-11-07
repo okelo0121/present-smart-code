@@ -4,9 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { BookOpen, Eye, EyeOff } from "lucide-react";
+import { BookOpen, Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+
+const passwordSchema = z.string()
+  .min(8, "At least 8 characters")
+  .regex(/[A-Z]/, "One uppercase letter")
+  .regex(/[a-z]/, "One lowercase letter")
+  .regex(/[0-9]/, "One number");
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -16,6 +23,12 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isStudentSignup, setIsStudentSignup] = useState(false);
+  const [passwordValidation, setPasswordValidation] = useState({
+    minLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasNumber: false
+  });
   
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
@@ -39,6 +52,18 @@ const Auth = () => {
       navigate('/');
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    // Update password validation on change
+    if (!isLogin) {
+      setPasswordValidation({
+        minLength: password.length >= 8,
+        hasUppercase: /[A-Z]/.test(password),
+        hasLowercase: /[a-z]/.test(password),
+        hasNumber: /[0-9]/.test(password)
+      });
+    }
+  }, [password, isLogin]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +90,19 @@ const Auth = () => {
             title: "Validation Error",
             description: "Please enter your full name",
             variant: "destructive",
+          });
+          return;
+        }
+
+        // Validate password strength
+        const passwordValidation = passwordSchema.safeParse(password);
+        if (!passwordValidation.success) {
+          const errors = passwordValidation.error.errors.map(e => e.message).join(", ");
+          toast({
+            title: "Password Requirements Not Met",
+            description: errors,
+            variant: "destructive",
+            duration: 5000,
           });
           return;
         }
@@ -179,6 +217,53 @@ const Auth = () => {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
+              {!isLogin && (
+                <div className="mt-2 space-y-1 text-sm">
+                  <p className="text-muted-foreground mb-1">Password must contain:</p>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      {passwordValidation.minLength ? (
+                        <CheckCircle2 className="h-3 w-3 text-green-500" />
+                      ) : (
+                        <XCircle className="h-3 w-3 text-muted-foreground" />
+                      )}
+                      <span className={passwordValidation.minLength ? "text-green-500" : "text-muted-foreground"}>
+                        At least 8 characters
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {passwordValidation.hasUppercase ? (
+                        <CheckCircle2 className="h-3 w-3 text-green-500" />
+                      ) : (
+                        <XCircle className="h-3 w-3 text-muted-foreground" />
+                      )}
+                      <span className={passwordValidation.hasUppercase ? "text-green-500" : "text-muted-foreground"}>
+                        One uppercase letter
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {passwordValidation.hasLowercase ? (
+                        <CheckCircle2 className="h-3 w-3 text-green-500" />
+                      ) : (
+                        <XCircle className="h-3 w-3 text-muted-foreground" />
+                      )}
+                      <span className={passwordValidation.hasLowercase ? "text-green-500" : "text-muted-foreground"}>
+                        One lowercase letter
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {passwordValidation.hasNumber ? (
+                        <CheckCircle2 className="h-3 w-3 text-green-500" />
+                      ) : (
+                        <XCircle className="h-3 w-3 text-muted-foreground" />
+                      )}
+                      <span className={passwordValidation.hasNumber ? "text-green-500" : "text-muted-foreground"}>
+                        One number
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
             <Button

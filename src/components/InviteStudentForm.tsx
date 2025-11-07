@@ -6,6 +6,14 @@ import { Label } from "@/components/ui/label";
 import { UserPlus, Mail, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+const inviteSchema = z.object({
+  studentName: z.string().trim().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
+  studentEmail: z.string().email("Invalid email address").max(255, "Email must be less than 255 characters"),
+  className: z.string().trim().min(1, "Class is required").max(100, "Class name must be less than 100 characters"),
+  department: z.string().trim().min(1, "Department is required").max(100, "Department name must be less than 100 characters")
+});
 
 export const InviteStudentForm = () => {
   const [studentName, setStudentName] = useState("");
@@ -20,17 +28,29 @@ export const InviteStudentForm = () => {
     setLoading(true);
 
     try {
+      // Validate input data
+      const validationResult = inviteSchema.safeParse({
+        studentName,
+        studentEmail,
+        className,
+        department
+      });
+
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors.map(e => e.message).join(", ");
+        toast({
+          title: "Validation Error",
+          description: errors,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('send-student-invite', {
-        body: {
-          studentName,
-          studentEmail,
-          className,
-          department,
-        }
+        body: validationResult.data
       });
 
       if (error) {
-        // Check if there's an error message in the data
         const errorMessage = data?.error || error.message;
         throw new Error(errorMessage);
       }
@@ -46,8 +66,6 @@ export const InviteStudentForm = () => {
       setClassName("");
       setDepartment("");
     } catch (error: any) {
-      console.error("Error sending invitation:", error);
-
       const errorMessage = error.message || "Failed to send invitation";
 
       toast({
