@@ -1,38 +1,12 @@
-# EduTrack: A Smart Attendance System
+# EduTrack
 
 **Project Overview**
 
-EduTrack is a modern, web-based application designed to streamline and automate the process of managing student attendance. This project aims to replace traditional paper-based methods, providing instructors and administrators with an
-efficient, reliable, and data-driven tool to track student presence, generate reports, and manage course rosters.
+EduTrack is a web application for lecturers to manage and invite students to an educational platform. It provides an efficient, reliable, and data-driven tool to track student presence, generate reports, and manage course rosters.
 
----
+## Live URL
 
-## ⚠️ Important: Reviewer's Guide & Demo Limitations
-
-This website is a fully functional demo. However, due to the technical requirements of the email delivery service (**Resend**), there are specific limitations on new user sign-ups.
-
-**The Limitation:**
-The **Resend** email service is used for sending verification emails and student invitations. To prevent spam, this service requires a verified domain (e.g., `my-school-project.com`) to send emails to *any* public address.
-
-Since this is a student project deployed on a free platform, I do not have a custom verified domain. As a result, the application can only send emails to and accept sign-ups from **my own pre-verified email address.**
-
-### How to Review This Project
-
-To allow you to fully test and review all instructor-level features, **please use the following pre-registered master account:**
-
-* **Email:** `okelloulak2004@gmail.com `
-* **Password:** `@Okello123`
-
-**Using this account, you will be able to:**
-* ✅ Log in as an instructor.
-* ✅ Access the main dashboard.
-* ✅ Create and manage your courses.
-* ✅ View and manage student rosters.
-* ✅ Demonstrate the "Invite Student" feature.
-
-Please note: When you use the "Invite Student" feature, the system **will** successfully send the invitation email (as it originates from my verified account). However, the "student" receiving the email will not be able to complete their own sign-up unless their email is *also* my master email address, due to the same domain restriction.
-
-This limitation is purely a constraint of the free-tier email service for this demo and not a flaw in the application's authentication or invitation logic.
+The project is live at: [www.edutrack.store](https://www.edutrack.store)
 
 ---
 
@@ -49,10 +23,10 @@ This limitation is purely a constraint of the free-tier email service for this d
 
 This project was built using a modern technology stack:
 
-* **Frontend:** `[e.g., Next.js, React, Tailwind CSS, etc.]`
-* **Backend:** `[e.g., Next.js API Routes, Node.js, Express, etc.]`
-* **Database:** `[e.g., PostgreSQL, MongoDB, Supabase, Firebase, etc.]`
-* **Authentication:** `[e.g., NextAuth, Clerk, or your custom solution]`
+* **Frontend:** React, Vite, TypeScript, Tailwind CSS
+* **Backend:** Supabase (Serverless Functions)
+* **Database:** Supabase (PostgreSQL)
+* **Authentication:** Supabase
 * **Email Service:** Resend
 * **Deployment:** Vercel
 
