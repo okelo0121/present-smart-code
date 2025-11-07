@@ -8,7 +8,7 @@ efficient, reliable, and data-driven tool to track student presence, generate re
 **Live Demo**
 
 You can access the live demonstration of the project here:
-**[edutrack.store](www.edutrack.store)**
+**[https://edutrack.store](www.edutrack.store)**
 
 ---
 
