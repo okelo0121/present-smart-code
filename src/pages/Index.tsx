@@ -20,46 +20,20 @@ const Index = () => {
   }, [user, loading, navigate]);
 
   useEffect(() => {
-    const checkUserRole = async () => {
-      if (!user) return;
-      
-      setCheckingRole(true);
-      
-      // Check if user is a teacher
-      const { data: teacherData } = await supabase
-        .from('app_b3583718a0_teachers')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      if (teacherData) {
-        setUserType('teacher');
-        setCheckingRole(false);
-        return;
-      }
-      
-      // Check if user is a student
-      const { data: studentData } = await supabase
-        .from('app_b3583718a0_students')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      if (studentData) {
-        setUserType('student');
-        setCheckingRole(false);
-        return;
-      }
-      
-      // If neither, they're a new teacher who just signed up
-      setUserType('teacher');
-      setCheckingRole(false);
-    };
+    if (!user) return;
     
-    if (user && !userType) {
-      checkUserRole();
+    // Read role from auth metadata (server-verified)
+    const userTypeFromMetadata = user.user_metadata?.userType as 'teacher' | 'student' | undefined;
+    
+    if (userTypeFromMetadata) {
+      setUserType(userTypeFromMetadata);
+    } else {
+      // Fallback to teacher for users without metadata
+      setUserType('teacher');
     }
-  }, [user, userType]);
+    
+    setCheckingRole(false);
+  }, [user]);
 
   if (loading || checkingRole) {
     return (

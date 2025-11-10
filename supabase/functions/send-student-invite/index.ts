@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { checkRateLimit } from "../_shared/rate-limiter.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -23,6 +24,12 @@ interface InviteRequest {
   department: string;
   teacherName: string;
 }
+
+// Rate limit: 10 invites per minute per teacher
+const RATE_LIMIT = {
+  maxRequests: 10,
+  windowMs: 60 * 1000, // 1 minute
+};
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -58,6 +65,29 @@ Deno.serve(async (req: Request) => {
         {
           status: 401,
           headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Check rate limit
+    const rateLimitResult = checkRateLimit(user.id, RATE_LIMIT);
+    if (!rateLimitResult.allowed) {
+      const resetIn = Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000);
+      console.log(`Rate limit exceeded for user ${user.id}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Too many invitation requests. Please try again later.",
+          retryAfter: resetIn
+        }),
+        {
+          status: 429,
+          headers: { 
+            "Content-Type": "application/json",
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": rateLimitResult.resetTime.toString(),
+            "Retry-After": resetIn.toString(),
+            ...corsHeaders 
+          },
         }
       );
     }
@@ -299,6 +329,7 @@ Deno.serve(async (req: Request) => {
         status: 200,
         headers: {
           "Content-Type": "application/json",
+          "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
           ...corsHeaders,
         },
       }
