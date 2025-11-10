@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
+import { BookOpen, Eye, EyeOff, CheckCircle2, XCircle, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
@@ -185,7 +185,17 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-accent/20 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-gradient-card">
+      <div className="w-full max-w-md space-y-4">
+        <Button
+          variant="ghost"
+          className="gap-2"
+          onClick={() => navigate('/')}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Homepage
+        </Button>
+        
+        <Card className="bg-gradient-card">
         <CardHeader className="text-center pb-6">
           <div className="w-16 h-16 mx-auto bg-gradient-primary rounded-2xl flex items-center justify-center shadow-large mb-4">
             <BookOpen className="w-8 h-8 text-white" />
@@ -352,6 +362,7 @@ const Auth = () => {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };
