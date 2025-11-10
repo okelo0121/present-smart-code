@@ -12,29 +12,25 @@ BEGIN
       user_id,
       name,
       email,
-      department,
-      created_at
+      department
     )
     VALUES (
       NEW.id,
       COALESCE(NEW.raw_user_meta_data->>'name', 'Unknown Teacher'),
       NEW.email,
-      COALESCE(NEW.raw_user_meta_data->>'department', 'General'),
-      now()
+      COALESCE(NEW.raw_user_meta_data->>'department', 'General')
     );
   -- Check if user type is student
   ELSIF NEW.raw_user_meta_data->>'userType' = 'student' THEN
     INSERT INTO public.app_b3583718a0_students (
       user_id,
       name,
-      email,
-      created_at
+      email
     )
     VALUES (
       NEW.id,
       COALESCE(NEW.raw_user_meta_data->>'name', 'Unknown Student'),
-      NEW.email,
-      now()
+      NEW.email
     );
   END IF;
 
