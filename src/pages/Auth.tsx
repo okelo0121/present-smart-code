@@ -117,13 +117,24 @@ const Auth = () => {
           if (error.message.includes("already registered") || error.message.includes("already been registered")) {
             toast({
               title: "Account Already Exists", 
-              description: "This email is already registered. If you haven't confirmed your email yet, please check your inbox (and spam folder). A new confirmation email has been sent.",
-              duration: 10000,
+              description: "This email is already registered. Please try signing in instead, or use a different email address.",
+              duration: 8000,
             });
+            // Switch to login mode
+            setIsLogin(true);
+            setPassword("");
+          } else if (error.message.includes("Database error") || error.message.includes("duplicate key")) {
+            toast({
+              title: "Account Already Exists", 
+              description: "An account with this email already exists. Please sign in instead.",
+              duration: 6000,
+            });
+            setIsLogin(true);
+            setPassword("");
           } else {
             toast({
               title: "Sign Up Error", 
-              description: error.message,
+              description: error.message || "Failed to create account. Please try again.",
               variant: "destructive",
             });
           }
