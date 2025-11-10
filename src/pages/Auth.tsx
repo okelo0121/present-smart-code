@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BookOpen, Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +21,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [department, setDepartment] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isStudentSignup, setIsStudentSignup] = useState(false);
@@ -97,6 +99,15 @@ const Auth = () => {
           return;
         }
 
+        if (!isStudentSignup && !department) {
+          toast({
+            title: "Validation Error",
+            description: "Please select your department",
+            variant: "destructive",
+          });
+          return;
+        }
+
         // Validate password strength
         const passwordValidation = passwordSchema.safeParse(password);
         if (!passwordValidation.success) {
@@ -110,8 +121,9 @@ const Auth = () => {
           return;
         }
         
-        const userType = isStudentSignup ? 'student' : 'teacher';
-        const { error } = await signUp(email, password, { name, userType }, inviteToken || undefined);
+        const userType: 'student' | 'teacher' = isStudentSignup ? 'student' : 'teacher';
+        const metadata = { name, userType, ...(department && { department }) };
+        const { error } = await signUp(email, password, metadata, inviteToken || undefined);
         if (error) {
           // Check if user already exists
           if (error.message.includes("already registered") || error.message.includes("already been registered")) {
@@ -207,6 +219,31 @@ const Auth = () => {
                     placeholder="Enter your full name"
                   />
                 </div>
+                
+                {!isStudentSignup && (
+                  <div className="space-y-2">
+                    <Label htmlFor="department">Department</Label>
+                    <Select value={department} onValueChange={setDepartment}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Computer Science">Computer Science</SelectItem>
+                        <SelectItem value="Mathematics">Mathematics</SelectItem>
+                        <SelectItem value="Physics">Physics</SelectItem>
+                        <SelectItem value="Chemistry">Chemistry</SelectItem>
+                        <SelectItem value="Biology">Biology</SelectItem>
+                        <SelectItem value="Engineering">Engineering</SelectItem>
+                        <SelectItem value="Business Administration">Business Administration</SelectItem>
+                        <SelectItem value="Economics">Economics</SelectItem>
+                        <SelectItem value="English Literature">English Literature</SelectItem>
+                        <SelectItem value="History">History</SelectItem>
+                        <SelectItem value="Psychology">Psychology</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </>
             )}
             
