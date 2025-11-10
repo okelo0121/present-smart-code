@@ -120,14 +120,13 @@ Deno.serve(async (req: Request) => {
 
     const { code } = validated;
 
-    // Find active attendance code (valid within last 2 minutes)
-    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    // Find active attendance code (not expired)
+    const now = new Date().toISOString();
     const { data: attendanceCode, error: codeError } = await supabase
       .from("app_b3583718a0_attendance_codes")
       .select("*")
       .eq("code", code.toUpperCase())
-      .eq("active", true)
-      .gte("created_at", twoMinutesAgo)
+      .gt("expires_at", now)
       .maybeSingle();
 
     if (codeError || !attendanceCode) {
@@ -141,19 +140,34 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Check if already marked for this class today
-    const today = new Date().toISOString().split('T')[0];
+    // Verify student is in the same class as the attendance code
+    const { data: studentData } = await supabase
+      .from("app_b3583718a0_students")
+      .select("class")
+      .eq("id", student.id)
+      .single();
+
+    if (studentData?.class !== attendanceCode.class) {
+      return new Response(
+        JSON.stringify({ error: "This code is not for your class" }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Check if already marked with this code
     const { data: existingRecord } = await supabase
       .from("app_b3583718a0_attendance_records")
       .select("id")
       .eq("student_id", student.id)
-      .eq("class_id", attendanceCode.class_id)
-      .gte("created_at", today)
+      .eq("code_id", attendanceCode.id)
       .maybeSingle();
 
     if (existingRecord) {
       return new Response(
-        JSON.stringify({ error: "Attendance already marked for today" }),
+        JSON.stringify({ error: "You already marked attendance with this code" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -166,9 +180,7 @@ Deno.serve(async (req: Request) => {
       .from("app_b3583718a0_attendance_records")
       .insert({
         student_id: student.id,
-        class_id: attendanceCode.class_id,
-        status: "present",
-        marked_at: new Date().toISOString(),
+        code_id: attendanceCode.id,
       })
       .select()
       .single();

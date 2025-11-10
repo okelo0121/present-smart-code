@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,8 @@ import {
   AlertCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface StudentInterfaceProps {
   activeView: string;
@@ -23,27 +25,66 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
   const [enteredCode, setEnteredCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [todayMarked, setTodayMarked] = useState(false);
+  const [studentInfo, setStudentInfo] = useState<any>(null);
+  const [attendanceHistory, setAttendanceHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  // Mock student data
-  const studentInfo = {
-    name: "John Doe",
-    studentId: "CS2024001",
-    department: "Computer Science",
-    semester: "Fall 2024"
-  };
+  // Fetch student data and attendance history
+  useEffect(() => {
+    const fetchStudentData = async () => {
+      if (!user) return;
 
-  const mockAttendanceHistory = [
-    { date: "Oct 21, 2024", status: "present", time: "9:15 AM", class: "Data Structures" },
-    { date: "Oct 20, 2024", status: "present", time: "9:12 AM", class: "Data Structures" },
-    { date: "Oct 19, 2024", status: "absent", time: "-", class: "Data Structures" },
-    { date: "Oct 18, 2024", status: "present", time: "9:18 AM", class: "Data Structures" },
-    { date: "Oct 17, 2024", status: "present", time: "9:08 AM", class: "Data Structures" },
-  ];
+      try {
+        // Fetch student info
+        const { data: student, error: studentError } = await supabase
+          .from('app_b3583718a0_students')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-  const presentDays = mockAttendanceHistory.filter(day => day.status === "present").length;
-  const totalDays = mockAttendanceHistory.length;
-  const attendancePercentage = Math.round((presentDays / totalDays) * 100);
+        if (studentError) throw studentError;
+        
+        if (student) {
+          setStudentInfo(student);
+
+          // Check if already marked today
+          const today = new Date().toISOString().split('T')[0];
+          const { data: todayRecord } = await supabase
+            .from('app_b3583718a0_attendance_records')
+            .select('*')
+            .eq('student_id', student.id)
+            .gte('submitted_at', today)
+            .maybeSingle();
+
+          setTodayMarked(!!todayRecord);
+
+          // Fetch attendance history
+          const { data: records, error: recordsError } = await supabase
+            .from('app_b3583718a0_attendance_records')
+            .select('*')
+            .eq('student_id', student.id)
+            .order('submitted_at', { ascending: false })
+            .limit(10);
+
+          if (recordsError) throw recordsError;
+          setAttendanceHistory(records || []);
+        }
+      } catch (error: any) {
+        console.error('Error fetching student data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load your information. Please refresh the page.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudentData();
+  }, [user, toast]);
 
   const handleCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,25 +99,84 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
 
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      if (enteredCode.length === 6) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Authentication Error",
+          description: "Please sign in again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('submit-attendance', {
+        body: { code: enteredCode.toUpperCase() },
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
         setTodayMarked(true);
         toast({
           title: "Attendance Marked!",
-          description: `You've been marked present for today's class.`,
+          description: "You've been marked present for today's class.",
         });
         setEnteredCode("");
-      } else {
-        toast({
-          title: "Invalid Code",
-          description: "The code you entered is invalid or has expired.",
-          variant: "destructive",
-        });
+        
+        // Refresh attendance history
+        const { data: records } = await supabase
+          .from('app_b3583718a0_attendance_records')
+          .select('*')
+          .eq('student_id', studentInfo.id)
+          .order('submitted_at', { ascending: false })
+          .limit(10);
+        
+        if (records) setAttendanceHistory(records);
       }
+    } catch (error: any) {
+      console.error('Error submitting attendance:', error);
+      toast({
+        title: "Submission Failed",
+        description: error.message || "The code is invalid or has expired. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading your information...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!studentInfo) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Card className="max-w-md">
+          <CardContent className="p-6 text-center">
+            <AlertCircle className="w-12 h-12 text-education-warning mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Student Profile Found</h3>
+            <p className="text-muted-foreground">
+              Your account hasn't been linked to a student profile yet. Please contact your teacher to send you an invitation.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const presentDays = attendanceHistory.length;
+  const totalDays = attendanceHistory.length;
+  const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
 
   if (activeView === 'enter-code') {
     return (
@@ -84,7 +184,7 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-foreground">Mark Attendance</h2>
           <Badge variant="outline" className="text-education-info border-education-info">
-            {studentInfo.department}
+            {studentInfo?.department || 'Student'}
           </Badge>
         </div>
 
@@ -160,24 +260,24 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Student Name</span>
-                  <span className="font-medium">{studentInfo.name}</span>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Student Name</span>
+                    <span className="font-medium">{studentInfo.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Department</span>
+                    <span className="font-medium">{studentInfo.department}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Class</span>
+                    <span className="font-medium">{studentInfo.class}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Date</span>
+                    <span className="font-medium">{new Date().toLocaleDateString()}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Student ID</span>
-                  <span className="font-medium">{studentInfo.studentId}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Class</span>
-                  <span className="font-medium">Data Structures</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Date</span>
-                  <span className="font-medium">{new Date().toLocaleDateString()}</span>
-                </div>
-              </div>
 
               <div className="pt-4 border-t border-border">
                 <div className="flex items-center space-x-2">
@@ -225,7 +325,7 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-foreground">My Attendance</h2>
         <Badge variant="outline" className="text-education-info border-education-info">
-          {studentInfo.semester}
+          {studentInfo.class}
         </Badge>
       </div>
 
@@ -303,32 +403,31 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {mockAttendanceHistory.map((record, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  {record.status === "present" ? (
+            {attendanceHistory.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>No attendance records yet</p>
+                <p className="text-sm">Start marking your attendance to see your history</p>
+              </div>
+            ) : (
+              attendanceHistory.map((record, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                  <div className="flex items-center space-x-3">
                     <CheckCircle className="w-5 h-5 text-education-success" />
-                  ) : (
-                    <XCircle className="w-5 h-5 text-destructive" />
-                  )}
-                  <div>
-                    <p className="font-medium">{record.date}</p>
-                    <p className="text-sm text-muted-foreground">{record.class}</p>
+                    <div>
+                      <p className="font-medium">{new Date(record.submitted_at).toLocaleDateString()}</p>
+                      <p className="text-sm text-muted-foreground">{studentInfo.class}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Badge className="bg-education-success">Present</Badge>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(record.submitted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <Badge 
-                    variant={record.status === "present" ? "default" : "destructive"}
-                    className={record.status === "present" ? "bg-education-success" : ""}
-                  >
-                    {record.status === "present" ? "Present" : "Absent"}
-                  </Badge>
-                  {record.time !== "-" && (
-                    <p className="text-xs text-muted-foreground mt-1">{record.time}</p>
-                  )}
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
