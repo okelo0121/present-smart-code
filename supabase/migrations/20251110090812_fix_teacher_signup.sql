@@ -9,28 +9,36 @@ BEGIN
   -- Check if user type is teacher
   IF NEW.raw_user_meta_data->>'userType' = 'teacher' THEN
     INSERT INTO public.app_b3583718a0_teachers (
+      id,
       user_id,
       name,
       email,
-      department
+      department,
+      created_at
     )
     VALUES (
+      gen_random_uuid(),
       NEW.id,
       COALESCE(NEW.raw_user_meta_data->>'name', 'Unknown Teacher'),
       NEW.email,
-      COALESCE(NEW.raw_user_meta_data->>'department', 'General')
+      COALESCE(NEW.raw_user_meta_data->>'department', 'General'),
+      now()
     );
   -- Check if user type is student
   ELSIF NEW.raw_user_meta_data->>'userType' = 'student' THEN
     INSERT INTO public.app_b3583718a0_students (
+      id,
       user_id,
       name,
-      email
+      email,
+      created_at
     )
     VALUES (
+      gen_random_uuid(),
       NEW.id,
       COALESCE(NEW.raw_user_meta_data->>'name', 'Unknown Student'),
-      NEW.email
+      NEW.email,
+      now()
     );
   END IF;
 
