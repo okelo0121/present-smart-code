@@ -14,8 +14,10 @@ import {
   AlertCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, getAuthToken } from "@/hooks/useAuth";
+
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = `${BASE_URL.replace(/\/$/, '')}/api`;
 
 interface StudentInterfaceProps {
   activeView: string;
@@ -37,40 +39,33 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
       if (!user) return;
 
       try {
+        const token = getAuthToken();
+        if (!token) return;
+
         // Fetch student info
-        const { data: student, error: studentError } = await supabase
-          .from('app_b3583718a0_students')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
+        const studentRes = await fetch(`${API_URL}/users/student/profile`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
 
-        if (studentError) throw studentError;
-        
-        if (student) {
-          setStudentInfo(student);
+        if (!studentRes.ok) throw new Error('Failed to fetch student profile');
+        const student = await studentRes.json();
+        setStudentInfo(student);
 
-          // Check if already marked today
-          const today = new Date().toISOString().split('T')[0];
-          const { data: todayRecord } = await supabase
-            .from('app_b3583718a0_attendance_records')
-            .select('*')
-            .eq('student_id', student.id)
-            .gte('submitted_at', today)
-            .maybeSingle();
+        // Check if already marked today
+        const attendanceRes = await fetch(`${API_URL}/attendance/history`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
 
-          setTodayMarked(!!todayRecord);
+        if (!attendanceRes.ok) throw new Error('Failed to fetch attendance');
+        const records = await attendanceRes.json();
 
-          // Fetch attendance history
-          const { data: records, error: recordsError } = await supabase
-            .from('app_b3583718a0_attendance_records')
-            .select('*')
-            .eq('student_id', student.id)
-            .order('submitted_at', { ascending: false })
-            .limit(10);
+        const today = new Date().toISOString().split('T')[0];
+        const todayRecord = records.find((r: any) => 
+          new Date(r.submittedAt).toISOString().split('T')[0] === today
+        );
 
-          if (recordsError) throw recordsError;
-          setAttendanceHistory(records || []);
-        }
+        setTodayMarked(!!todayRecord);
+        setAttendanceHistory(records || []);
       } catch (error: any) {
         console.error('Error fetching student data:', error);
         toast({
@@ -100,9 +95,8 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
     setIsSubmitting(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
+      const token = getAuthToken();
+      if (!token) {
         toast({
           title: "Authentication Error",
           description: "Please sign in again.",
@@ -111,11 +105,20 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('submit-attendance', {
-        body: { code: enteredCode.toUpperCase() },
+      const response = await fetch(`${API_URL}/attendance/submit`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ code: enteredCode.toUpperCase() })
       });
 
-      if (error) throw error;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit attendance');
+      }
 
       if (data.success) {
         setTodayMarked(true);
@@ -124,16 +127,16 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
           description: "You've been marked present for today's class.",
         });
         setEnteredCode("");
-        
+
         // Refresh attendance history
-        const { data: records } = await supabase
-          .from('app_b3583718a0_attendance_records')
-          .select('*')
-          .eq('student_id', studentInfo.id)
-          .order('submitted_at', { ascending: false })
-          .limit(10);
-        
-        if (records) setAttendanceHistory(records);
+        const historyRes = await fetch(`${API_URL}/attendance/history`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (historyRes.ok) {
+          const records = await historyRes.json();
+          setAttendanceHistory(records);
+        }
       }
     } catch (error: any) {
       console.error('Error submitting attendance:', error);

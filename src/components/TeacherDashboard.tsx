@@ -15,14 +15,18 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { InviteStudentForm } from "./InviteStudentForm";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, getAuthToken } from "@/hooks/useAuth";
+
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = `${BASE_URL.replace(/\/$/, '')}/api`;
 
 interface TeacherDashboardProps {
   activeView: string;
 }
 
 export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
+  console.log('[TeacherDashboard] Rendered with activeView:', activeView);
+  
   const [currentCode, setCurrentCode] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [studentsPresent, setStudentsPresent] = useState(0);
@@ -33,6 +37,8 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  console.log('[TeacherDashboard] State - currentCode:', currentCode, 'teacherData:', !!teacherData);
+
   const attendanceRate = totalStudents > 0 ? Math.round((studentsPresent / totalStudents) * 100) : 0;
 
   // Fetch teacher data and students
@@ -40,74 +46,45 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
     const fetchTeacherData = async () => {
       if (!user) return;
 
-      const { data: teacher, error: teacherError } = await supabase
-        .from('app_b3583718a0_teachers')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+      try {
+        const token = getAuthToken();
+        if (!token) return;
 
-      if (teacherError) {
-        return;
-      }
+        // Fetch teacher profile
+        const teacherRes = await fetch(`${API_URL}/users/teacher/profile`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!teacherRes.ok) throw new Error('Failed to fetch teacher profile');
+        const teacher = await teacherRes.json();
+        setTeacherData(teacher);
 
-      setTeacherData(teacher);
+        // Fetch students
+        const studentsRes = await fetch(`${API_URL}/users/teacher/students`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!studentsRes.ok) throw new Error('Failed to fetch students');
+        const students = await studentsRes.json();
+        setTotalStudents(students.length);
 
-      // Fetch students for this teacher
-      const { data: students, error: studentsError } = await supabase
-        .from('app_b3583718a0_students')
-        .select('*')
-        .eq('teacher_id', teacher.id);
+        // Count students by class
+        const classCounts: Record<string, number> = {};
+        students.forEach((student: any) => {
+          classCounts[student.class] = (classCounts[student.class] || 0) + 1;
+        });
+        setStudentsByClass(classCounts);
 
-      if (studentsError) {
-        return;
-      }
-
-      setTotalStudents(students?.length || 0);
-
-      // Count students by class
-      const classCounts: Record<string, number> = {};
-      students?.forEach(student => {
-        classCounts[student.class] = (classCounts[student.class] || 0) + 1;
-      });
-      setStudentsByClass(classCounts);
-
-      // Fetch attendance records for the last 7 days
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-      const { data: codes } = await supabase
-        .from('app_b3583718a0_attendance_codes')
-        .select('id, code, class, created_at')
-        .eq('teacher_id', teacher.id)
-        .gte('created_at', sevenDaysAgo.toISOString())
-        .order('created_at', { ascending: false });
-
-      if (codes) {
-        const attendanceByDay: Record<string, { present: number; total: number; date: string }> = {};
-
-        for (const code of codes) {
-          const dateKey = new Date(code.created_at).toLocaleDateString();
-          
-          if (!attendanceByDay[dateKey]) {
-            attendanceByDay[dateKey] = { present: 0, total: students?.length || 0, date: dateKey };
-          }
-
-          const { data: records } = await supabase
-            .from('app_b3583718a0_attendance_records')
-            .select('student_id')
-            .eq('code_id', code.id);
-
-          attendanceByDay[dateKey].present += records?.length || 0;
-        }
-
-        const formattedData = Object.values(attendanceByDay).map(day => ({
-          date: day.date,
-          present: day.present,
-          absent: day.total - day.present,
-          rate: day.total > 0 ? Math.round((day.present / day.total) * 100) : 0
-        }));
-
-        setAttendanceData(formattedData);
+        // Fetch attendance stats
+        const statsRes = await fetch(`${API_URL}/attendance/stats`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!statsRes.ok) throw new Error('Failed to fetch attendance stats');
+        const stats = await statsRes.json();
+        setAttendanceData(stats.stats || []);
+      } catch (error) {
+        console.error('Error fetching teacher data:', error);
       }
     };
 
@@ -115,38 +92,57 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
   }, [user]);
 
   const generateCode = async () => {
-    if (!teacherData) return;
-
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 2);
-
-    const { error } = await supabase
-      .from('app_b3583718a0_attendance_codes')
-      .insert({
-        code,
-        teacher_id: teacherData.id,
-        class: teacherData.department,
-        expires_at: expiresAt.toISOString()
-      });
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate code",
-        variant: "destructive",
-      });
+    console.log('[generateCode] Button clicked!');
+    console.log('[generateCode] Teacher data:', teacherData);
+    console.log('[generateCode] currentCode state:', currentCode);
+    
+    if (!teacherData) {
+      console.warn('[generateCode] Teacher data not loaded yet');
       return;
     }
 
-    setCurrentCode(code);
-    setTimeLeft(120);
-    setStudentsPresent(0);
-    
-    toast({
-      title: "Code Generated!",
-      description: `New attendance code: ${code}`,
-    });
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        console.warn('[generateCode] No auth token found');
+        return;
+      }
+
+      console.log('[generateCode] Calling endpoint:', `${API_URL}/attendance/generate-code`);
+      const response = await fetch(`${API_URL}/attendance/generate-code`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('[generateCode] Response status:', response.status);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('[generateCode] Error response:', errorData);
+        throw new Error(errorData.error || 'Failed to generate code');
+      }
+      
+      const data = await response.json();
+      console.log('[generateCode] Success:', data);
+
+      setCurrentCode(data.code);
+      setTimeLeft(data.expiresIn);
+      setStudentsPresent(0);
+
+      toast({
+        title: "Code Generated!",
+        description: `New attendance code: ${data.code}`,
+      });
+    } catch (error: any) {
+      console.error('[generateCode] Exception:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate code",
+        variant: "destructive",
+      });
+    }
   };
 
   useEffect(() => {
@@ -175,43 +171,33 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
     if (!currentCode || !teacherData) return;
 
     const fetchCurrentAttendance = async () => {
-      const { data: codeData } = await supabase
-        .from('app_b3583718a0_attendance_codes')
-        .select('id')
-        .eq('code', currentCode)
-        .eq('teacher_id', teacherData.id)
-        .single();
+      try {
+        const token = getAuthToken();
+        if (!token) return;
 
-      if (codeData) {
-        const { data: records } = await supabase
-          .from('app_b3583718a0_attendance_records')
-          .select('id')
-          .eq('code_id', codeData.id);
+        const response = await fetch(`${API_URL}/attendance/stats`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
 
-        setStudentsPresent(records?.length || 0);
+        if (!response.ok) throw new Error('Failed to fetch attendance');
+        const data = await response.json();
+        
+        if (data.stats && data.stats.length > 0) {
+          const todayStats = data.stats[0];
+          setStudentsPresent(todayStats.present);
+        }
+      } catch (error) {
+        console.error('Error fetching attendance:', error);
       }
     };
 
+    // Fetch immediately
     fetchCurrentAttendance();
 
-    const channel = supabase
-      .channel('attendance-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'app_b3583718a0_attendance_records'
-        },
-        () => {
-          fetchCurrentAttendance();
-        }
-      )
-      .subscribe();
+    // Poll for updates every 2 seconds
+    const interval = setInterval(fetchCurrentAttendance, 2000);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => clearInterval(interval);
   }, [currentCode, teacherData]);
 
   const formatTime = (seconds: number) => {
@@ -283,6 +269,7 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
   }
 
   if (activeView === 'generate-code') {
+    console.log('[generateCodeView] Rendering generate-code view');
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -324,7 +311,10 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
               )}
               
               <Button 
-                onClick={generateCode} 
+                onClick={() => {
+                  console.log('[Button] Clicked! Current disabled state:', !!currentCode, 'currentCode value:', currentCode);
+                  generateCode();
+                }}
                 disabled={!!currentCode}
                 className="w-full bg-gradient-primary hover:bg-education-primary-dark transition-smooth"
               >
@@ -376,6 +366,9 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
     );
   }
 
+  // Default dashboard view
+  console.log('[defaultDashboardView] Rendering default dashboard with activeView:', activeView);
+  
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

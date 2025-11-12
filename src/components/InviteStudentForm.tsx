@@ -5,13 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserPlus, Mail, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { getAuthToken } from "@/hooks/useAuth";
 import { z } from "zod";
 
+// Normalize API base so it always points to the backend API root (including /api)
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = BASE_URL.endsWith('/api') ? BASE_URL : `${BASE_URL.replace(/\/$/, '')}/api`;
+
 const inviteSchema = z.object({
-  studentName: z.string().trim().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
-  studentEmail: z.string().email("Invalid email address").max(255, "Email must be less than 255 characters"),
-  className: z.string().trim().min(1, "Class is required").max(100, "Class name must be less than 100 characters"),
+  name: z.string().trim().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
+  email: z.string().email("Invalid email address").max(255, "Email must be less than 255 characters"),
+  class: z.string().trim().min(1, "Class is required").max(100, "Class name must be less than 100 characters"),
   department: z.string().trim().min(1, "Department is required").max(100, "Department name must be less than 100 characters")
 });
 
@@ -30,9 +34,9 @@ export const InviteStudentForm = () => {
     try {
       // Validate input data
       const validationResult = inviteSchema.safeParse({
-        studentName,
-        studentEmail,
-        className,
+        name: studentName,
+        email: studentEmail,
+        class: className,
         department
       });
 
@@ -46,13 +50,29 @@ export const InviteStudentForm = () => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('send-student-invite', {
-        body: validationResult.data
+      const token = getAuthToken();
+      if (!token) {
+        toast({
+          title: "Authentication Error",
+          description: "Please sign in to invite students.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/users/teacher/invite-student`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(validationResult.data)
       });
 
-      if (error) {
-        const errorMessage = data?.error || error.message;
-        throw new Error(errorMessage);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send invitation');
       }
 
       toast({

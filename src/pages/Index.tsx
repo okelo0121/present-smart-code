@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { TeacherDashboard } from "@/components/TeacherDashboard";
 import { StudentInterface } from "@/components/StudentInterface";
@@ -21,17 +20,18 @@ const Index = () => {
 
   useEffect(() => {
     if (!user) return;
-    
-    // Read role from auth metadata (server-verified)
-    const userTypeFromMetadata = user.user_metadata?.userType as 'teacher' | 'student' | undefined;
-    
-    if (userTypeFromMetadata) {
-      setUserType(userTypeFromMetadata);
+
+    // Read role from backend-provided user object
+    // `useAuth` stores `user` with a shape { id, email, name, userType, emailVerified }
+    const userTypeFromBackend = (user as any).userType as 'teacher' | 'student' | undefined;
+
+    if (userTypeFromBackend) {
+      setUserType(userTypeFromBackend);
     } else {
-      // Fallback to teacher for users without metadata
-      setUserType('teacher');
+      // If the user type is missing, assume 'student' as a safer default
+      setUserType('student');
     }
-    
+
     setCheckingRole(false);
   }, [user]);
 

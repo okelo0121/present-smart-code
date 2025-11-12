@@ -1,10 +1,15 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+
+interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  userType: 'teacher' | 'student';
+  emailVerified: boolean;
+}
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: AuthUser | null;
   signUp: (email: string, password: string, metadata?: { name: string; userType: 'teacher' | 'student' }, inviteToken?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
@@ -13,106 +18,108 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Normalize API base so it always points to the backend API root (including /api)
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = BASE_URL.endsWith('/api') ? BASE_URL : `${BASE_URL.replace(/\/$/, '')}/api`;
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Load user from localStorage on mount
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+    const token = localStorage.getItem('authToken');
+    const storedUser = localStorage.getItem('user');
+
+    if (token && storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('Failed to parse stored user:', error);
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
       }
-    );
+    }
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    setLoading(false);
   }, []);
 
-  const signUp = async (email: string, password: string, metadata?: { name: string; userType: 'teacher' | 'student' }, inviteToken?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    // If there's an invite token, verify it first
-    if (inviteToken) {
-      const { data: invite, error: inviteError } = await supabase
-        .from('app_b3583718a0_student_invites')
-        .select('*')
-        .eq('token', inviteToken)
-        .eq('email', email)
-        .eq('used', false)
-        .maybeSingle();
-
-      if (inviteError || !invite) {
-        return { error: { message: 'Invalid or expired invitation link' } };
-      }
-
-      // Check if token is expired
-      if (new Date(invite.expires_at) < new Date()) {
-        return { error: { message: 'This invitation has expired. Please request a new one from your teacher.' } };
-      }
-
-      // Sign up with auto-confirm for invited students
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            ...metadata,
-            email_confirmed: true
-          }
-        }
+  const signUp = async (
+    email: string,
+    password: string,
+    metadata?: { name: string; userType: 'teacher' | 'student' },
+    inviteToken?: string
+  ) => {
+    try {
+      const response = await fetch(`${API_URL}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          name: metadata?.name,
+          userType: metadata?.userType,
+          inviteToken,
+          department: (metadata as any)?.department
+        })
       });
 
-      if (!error && data.user) {
-        // Mark token as used
-        await supabase
-          .from('app_b3583718a0_student_invites')
-          .update({ used: true })
-          .eq('token', inviteToken);
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { error: { message: data.error || 'Failed to sign up' } };
       }
 
-      return { error };
+      // Store token and user
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user);
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: { message: error.message || 'Network error' } };
     }
-    
-    // Regular signup for teachers (requires email verification)
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: metadata
-      }
-    });
-    return { error };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      const response = await fetch(`${API_URL}/auth/signin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { error: { message: data.error || 'Failed to sign in' } };
+      }
+
+      // Store token and user
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user);
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: { message: error.message || 'Network error' } };
+    }
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    return { error };
+    try {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      setUser(null);
+      return { error: null };
+    } catch (error: any) {
+      return { error: { message: error.message || 'Failed to sign out' } };
+    }
   };
 
   return (
     <AuthContext.Provider value={{
       user,
-      session,
       signUp,
       signIn,
       signOut,
@@ -130,3 +137,31 @@ export const useAuth = () => {
   }
   return context;
 };
+
+// Helper to get auth token
+export function getAuthToken(): string | null {
+  return localStorage.getItem('authToken');
+}
+
+// Helper to make authenticated API calls
+export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
+  const token = getAuthToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  };
+
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
+    headers
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || 'API request failed');
+  }
+
+  return data;
+}
