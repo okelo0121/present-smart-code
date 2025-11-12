@@ -23,7 +23,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/presen
 const allowedOrigins = [
   'http://localhost:8080',           // local frontend
   'http://localhost:5173',           // optional Vite dev server
-  'https://edutrackst.vercel.app'   // deployed frontend
+  'https://www.edutrack.store'   // deployed frontend
 ];
 
 app.use(cors({
