@@ -112,12 +112,6 @@ Visit http://localhost:5173 in your browser.
 | Document | Purpose |
 |----------|---------|
 | **[QUICK_START.md](./QUICK_START.md)** | 5-minute setup guide |
-| **[MERN_CONVERSION_GUIDE.md](./MERN_CONVERSION_GUIDE.md)** | Complete reference & architecture |
-| **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)** | All 13 API endpoints |
-| **[CONVERSION_SUMMARY.md](./CONVERSION_SUMMARY.md)** | What was built & how |
-| **[DOCUMENTATION_INDEX.md](./DOCUMENTATION_INDEX.md)** | Documentation navigation |
-| **[AT_A_GLANCE.md](./AT_A_GLANCE.md)** | Visual project summary |
-
 ---
 
 ## 🏗️ Project Structure
@@ -150,11 +144,6 @@ present-smart-code/
 │   └── main.tsx
 │
 ├── QUICK_START.md
-├── MERN_CONVERSION_GUIDE.md
-├── API_DOCUMENTATION.md
-├── CONVERSION_SUMMARY.md
-├── DOCUMENTATION_INDEX.md
-├── AT_A_GLANCE.md
 ├── package.json
 └── vite.config.ts
 ```
@@ -182,10 +171,6 @@ present-smart-code/
 - `POST /api/attendance/submit` - Submit attendance
 - `GET /api/attendance/history` - Get student history
 - `GET /api/attendance/stats` - Get attendance stats
-
-**Full documentation:** See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
-
----
 
 ## 🗄️ Database Schema
 
@@ -228,7 +213,6 @@ present-smart-code/
 - submitDate
 - status
 
-See [MERN_CONVERSION_GUIDE.md](./MERN_CONVERSION_GUIDE.md) for full schema details.
 
 ---
 
@@ -276,8 +260,6 @@ See [MERN_CONVERSION_GUIDE.md](./MERN_CONVERSION_GUIDE.md) for full schema detai
 3. Set `VITE_API_URL` to backend URL
 4. Deploy (auto on push)
 
-**Full deployment guide:** See [MERN_CONVERSION_GUIDE.md](./MERN_CONVERSION_GUIDE.md)
-
 ---
 
 ## 🧪 Testing
@@ -299,8 +281,6 @@ curl -X POST http://localhost:5000/api/attendance/generate-code \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json"
 ```
-
-See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for all cURL examples.
 
 ---
 
@@ -384,14 +364,9 @@ This project demonstrates:
 **Q: Why MERN instead of Supabase?**
 A: More control, better for learning, easier customization, and great for portfolio projects.
 
-**Q: How do I add new features?**
-A: See [MERN_CONVERSION_GUIDE.md](./MERN_CONVERSION_GUIDE.md) for adding new endpoints.
-
 **Q: Can I deploy for free?**
 A: Yes! MongoDB Atlas (free tier), Render (free tier), Vercel (free tier).
 
-**Q: How do I fix connection errors?**
-A: See troubleshooting section in [MERN_CONVERSION_GUIDE.md](./MERN_CONVERSION_GUIDE.md).
 
 **Q: Is this production-ready?**
 A: Yes! With proper environment variables and deployment setup.
@@ -400,10 +375,7 @@ A: Yes! With proper environment variables and deployment setup.
 
 ## 📞 Support
 
-- 📚 **Documentation:** See [DOCUMENTATION_INDEX.md](./DOCUMENTATION_INDEX.md)
 - 🚀 **Quick Setup:** See [QUICK_START.md](./QUICK_START.md)
-- 🔌 **API Reference:** See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
-- 📋 **Architecture:** See [MERN_CONVERSION_GUIDE.md](./MERN_CONVERSION_GUIDE.md)
 
 ---
 
