@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { Turnstile } from '@marsidev/react-turnstile';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,6 +33,7 @@ const Auth = () => {
     hasLowercase: false,
     hasNumber: false
   });
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
@@ -76,7 +78,7 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        const { error } = await signIn(email, password);
+        const { error } = await signIn(email, password, turnstileToken);
         if (error) {
           const errorMessage = error.message.includes("Invalid login credentials") 
             ? "Invalid email or password. If you just signed up, please confirm your email first (check your inbox and spam folder). You must verify your email before signing in."
@@ -123,7 +125,7 @@ const Auth = () => {
         
         const userType: 'student' | 'teacher' = isStudentSignup ? 'student' : 'teacher';
         const metadata = { name, userType, ...(department && { department }) };
-        const { error } = await signUp(email, password, metadata, inviteToken || undefined);
+        const { error } = await signUp(email, password, metadata, inviteToken || undefined, turnstileToken);
         if (error) {
           // Check if user already exists
           if (error.message.includes("already registered") || error.message.includes("already been registered")) {
@@ -339,11 +341,16 @@ const Auth = () => {
                 </div>
               )}
             </div>
+
+            <Turnstile
+              sitekey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+              onVerify={(token) => setTurnstileToken(token)}
+            />
             
             <Button
               type="submit"
               className="w-full bg-gradient-primary hover:bg-education-primary-dark transition-smooth"
-              disabled={loading}
+              disabled={loading || !turnstileToken}
             >
               {loading ? "Loading..." : (isLogin ? "Sign In" : "Create Account")}
             </Button>

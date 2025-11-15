@@ -10,8 +10,8 @@ interface AuthUser {
 
 interface AuthContextType {
   user: AuthUser | null;
-  signUp: (email: string, password: string, metadata?: { name: string; userType: 'teacher' | 'student' }, inviteToken?: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, metadata?: { name: string; userType: 'teacher' | 'student' }, inviteToken?: string, turnstileToken?: string | null) => Promise<{ error: any }>;
+  signIn: (email: string, password: string, turnstileToken?: string | null) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
   loading: boolean;
 }
@@ -48,7 +48,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     email: string,
     password: string,
     metadata?: { name: string; userType: 'teacher' | 'student' },
-    inviteToken?: string
+    inviteToken?: string,
+    turnstileToken?: string | null
   ) => {
     try {
       const response = await fetch(`${API_URL}/auth/signup`, {
@@ -60,7 +61,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           name: metadata?.name,
           userType: metadata?.userType,
           inviteToken,
-          department: (metadata as any)?.department
+          department: (metadata as any)?.department,
+          'cf-turnstile-response': turnstileToken
         })
       });
 
@@ -81,12 +83,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, turnstileToken?: string | null) => {
     try {
       const response = await fetch(`${API_URL}/auth/signin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, 'cf-turnstile-response': turnstileToken })
       });
 
       const data = await response.json();
