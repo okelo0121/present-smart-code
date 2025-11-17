@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📱 Present Smart Code
+# 📱 EduTrack
 
 ### Full-Stack MERN Attendance Tracking System
 
