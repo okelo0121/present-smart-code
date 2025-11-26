@@ -202,10 +202,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
     await user.save();
 
     // Get frontend URL from environment or default
-    // Use localhost for development if no env var or if it's production URL
-    const envFrontendUrl = process.env.FRONTEND_URL;
-    const isProductionUrl = envFrontendUrl && envFrontendUrl.includes('edutrack.store');
-    const frontendUrl = isProductionUrl ? 'http://localhost:8080' : (envFrontendUrl || 'http://localhost:8080');
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8080';
 
     // Send password reset email
     try {
