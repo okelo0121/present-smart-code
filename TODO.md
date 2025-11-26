@@ -10,4 +10,5 @@
 - [x] Plan approved by user
 - [x] Implementation started
 - [x] Profile view added
-- [ ] Testing completed
+- [x] Testing completed
+- [x] Fixed student authentication issue

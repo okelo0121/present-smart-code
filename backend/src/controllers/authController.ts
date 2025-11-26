@@ -12,8 +12,11 @@ export async function signup(req: Request, res: Response): Promise<void> {
   try {
     const { email, password, name, userType, department, inviteToken } = req.body;
 
+    // If invite token is provided, force userType to 'student' for security
+    const finalUserType = inviteToken ? 'student' : userType;
+
     // Validate input
-    if (!email || !password || !name || !userType) {
+    if (!email || !password || !name || !finalUserType) {
       res.status(400).json({ error: 'Missing required fields' });
       return;
     }
@@ -40,7 +43,7 @@ export async function signup(req: Request, res: Response): Promise<void> {
     await user.save();
 
     // Create profile based on user type
-    if (userType === 'teacher') {
+    if (finalUserType === 'teacher') {
       const teacher = new Teacher({
         userId: user._id,
         email: user.email,
@@ -48,7 +51,7 @@ export async function signup(req: Request, res: Response): Promise<void> {
         department: department || 'General'
       });
       await teacher.save();
-    } else if (userType === 'student') {
+    } else if (finalUserType === 'student') {
       const student = new Student({
         userId: user._id,
         email: user.email,
