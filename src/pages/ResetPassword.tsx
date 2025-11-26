@@ -8,6 +8,10 @@ import { BookOpen, Eye, EyeOff, CheckCircle2, XCircle, ArrowLeft } from "lucide-
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 
+// API URL configuration - same as useAuth.tsx
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = BASE_URL.endsWith('/api') ? BASE_URL : `${BASE_URL.replace(/\/$/, '')}/api`;
+
 const passwordSchema = z.string()
   .min(8, "At least 8 characters")
   .regex(/[A-Z]/, "One uppercase letter")
@@ -85,7 +89,7 @@ const ResetPassword = () => {
     }
 
     try {
-      const response = await fetch('/api/auth/reset-password', {
+      const response = await fetch(`${API_URL}/auth/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
