@@ -1,13 +1,12 @@
-# TODO: Add Teacher Profile View
+# TODO: Add Download Button for Mobile App
 
 ## Tasks
-- [x] Add profile view case in TeacherDashboard.tsx for activeView === 'profile'
-- [x] Display teacher information: name, email, department, join date
-- [x] Use consistent UI components (Card, Badge, icons) matching existing design
-- [x] Test the profile view functionality
+- [x] Add Smartphone icon import to Landing.tsx
+- [x] Add "Download App" button in hero section with APK link
+- [x] Test the download button functionality
 
 ## Status
 - [x] Plan approved by user
 - [x] Implementation started
-- [x] Profile view added
-- [x] Testing completed - Profile navigation exists in Layout.tsx and view is implemented in TeacherDashboard.tsx
+- [x] Download button added
+- [ ] Testing completed

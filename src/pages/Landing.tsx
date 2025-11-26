@@ -1,16 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { 
-  BookOpen, 
-  Clock, 
-  CheckCircle2, 
-  Users, 
-  Shield, 
+import {
+  BookOpen,
+  Clock,
+  CheckCircle2,
+  Users,
+  Shield,
   Zap,
   ArrowRight,
   BarChart3,
-  Mail
+  Mail,
+  Smartphone
 } from "lucide-react";
 
 const Landing = () => {
@@ -109,7 +110,7 @@ const Landing = () => {
             and real-time analytics. Perfect for teachers and educational institutions.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
+            <Button
               size="lg"
               onClick={() => navigate('/auth')}
               className="bg-gradient-primary hover:bg-education-primary-dark transition-smooth text-lg px-8 py-6 shadow-large hover-scale"
@@ -117,7 +118,16 @@ const Landing = () => {
               Get Started Free
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button 
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => window.open('https://github.com/okelo0121/present-smart-code/releases/download/v1.0.0/app-release.apk', '_blank')}
+              className="text-lg px-8 py-6 hover-scale"
+            >
+              <Smartphone className="mr-2 h-5 w-5" />
+              Download App
+            </Button>
+            <Button
               size="lg"
               variant="outline"
               onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
