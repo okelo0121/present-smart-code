@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { BookOpen, Eye, EyeOff, CheckCircle2, XCircle, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -32,7 +33,10 @@ const Auth = () => {
     hasLowercase: false,
     hasNumber: false
   });
-  
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -70,6 +74,47 @@ const Auth = () => {
     }
   }, [password, isLogin]);
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotPasswordLoading(true);
+
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: forgotPasswordEmail }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Password Reset Email Sent",
+          description: "If an account with that email exists, we've sent you a password reset link. Please check your email.",
+          duration: 6000,
+        });
+        setShowForgotPassword(false);
+        setForgotPasswordEmail("");
+      } else {
+        toast({
+          title: "Error",
+          description: data.error || "Failed to send password reset email",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send password reset email",
+        variant: "destructive",
+      });
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -78,10 +123,10 @@ const Auth = () => {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
-          const errorMessage = error.message.includes("Invalid login credentials") 
+          const errorMessage = error.message.includes("Invalid login credentials")
             ? "Invalid email or password. If you just signed up, please confirm your email first (check your inbox and spam folder). You must verify your email before signing in."
             : error.message;
-          
+
           toast({
             title: "Sign In Error",
             description: errorMessage,
@@ -348,7 +393,19 @@ const Auth = () => {
               {loading ? "Loading..." : (isLogin ? "Sign In" : "Create Account")}
             </Button>
           </form>
-          
+
+          {isLogin && (
+            <div className="text-center">
+              <button
+                type="button"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setShowForgotPassword(true)}
+              >
+                Forgot Password?
+              </button>
+            </div>
+          )}
+
           {!isStudentSignup && (
             <div className="text-center">
               <button
@@ -362,6 +419,34 @@ const Auth = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Forgot Password</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="forgot-email">Email</Label>
+              <Input
+                id="forgot-email"
+                type="email"
+                value={forgotPasswordEmail}
+                onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                required
+                placeholder="Enter your email address"
+              />
+            </div>
+            <Button
+              type="submit"
+              className="w-full bg-gradient-primary hover:bg-education-primary-dark transition-smooth"
+              disabled={forgotPasswordLoading}
+            >
+              {forgotPasswordLoading ? "Sending..." : "Send Reset Email"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
       </div>
     </div>
   );

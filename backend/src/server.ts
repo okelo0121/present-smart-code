@@ -23,7 +23,9 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/presen
 const allowedOrigins = [
   'http://localhost:8080',           // local frontend
   'http://localhost:5173',           // optional Vite dev server
-  'https://www.edutrack.store'   // deployed frontend
+  'https://www.edutrack.store',      // deployed frontend
+  'http://127.0.0.1:8080',          // alternative localhost
+  'http://127.0.0.1:5173'           // alternative localhost
 ];
 
 app.use(cors({
@@ -31,9 +33,13 @@ app.use(cors({
     // allow requests with no origin (like Postman, curl)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    // Allow localhost origins with any port for development
+    if (origin && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) {
+      callback(null, true);
+    } else if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
+      console.log('[CORS] Blocked origin:', origin);
       callback(new Error('CORS not allowed for this origin'));
     }
   },

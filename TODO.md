@@ -1,13 +1,22 @@
-# TODO: Add Download Button for Mobile App
+# Forgot Password Implementation Plan
 
-## Tasks
-- [x] Add Smartphone icon import to Landing.tsx
-- [x] Add "Download App" button in hero section with APK link
-- [x] Add conditional rendering to hide download button in mobile app
-- [x] Test the download button functionality
+## Frontend Changes
+- [ ] Add "Forgot Password?" link below password field in sign-in form
+- [ ] Create forgot password modal/form with email input
+- [ ] Add reset password form (accessed via email link)
+- [ ] Update Auth.tsx state management for forgot/reset password flows
 
-## Status
-- [x] Plan approved by user
-- [x] Implementation started
-- [x] Download button added with mobile app detection
-- [x] Testing completed - TypeScript errors resolved
+## Backend Changes
+- [ ] Add `forgotPassword` controller function (generate token, send email)
+- [ ] Add `resetPassword` controller function (validate token, update password)
+- [ ] Update auth routes to include `/forgot-password` and `/reset-password`
+- [ ] Add password reset email template in email utils
+
+## Database/Model Changes
+- [ ] Add reset token fields to User model (resetToken, resetTokenExpiry)
+
+## Testing
+- [ ] Test forgot password email sending
+- [ ] Test password reset token validation
+- [ ] Test complete password reset flow
+- [ ] Test edge cases (expired tokens, invalid emails, etc.)

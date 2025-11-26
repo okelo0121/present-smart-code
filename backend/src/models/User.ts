@@ -6,6 +6,8 @@ export interface IUser extends Document {
   name: string;
   userType: 'teacher' | 'student';
   emailVerified: boolean;
+  resetToken?: string;
+  resetTokenExpiry?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,6 +36,12 @@ const userSchema = new Schema<IUser>({
   emailVerified: {
     type: Boolean,
     default: false
+  },
+  resetToken: {
+    type: String
+  },
+  resetTokenExpiry: {
+    type: Date
   },
   createdAt: {
     type: Date,

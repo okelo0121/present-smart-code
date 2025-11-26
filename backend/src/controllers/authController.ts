@@ -5,8 +5,9 @@ import { Student } from '../models/Student';
 import { StudentInvite } from '../models/StudentInvite';
 import { hashPassword, comparePassword } from '../utils/password';
 import { generateToken, generateInviteToken } from '../utils/jwt';
-import { sendInviteEmail, sendWelcomeEmail } from '../utils/email';
+import { sendInviteEmail, sendWelcomeEmail, sendPasswordResetEmail } from '../utils/email';
 import { AuthRequest } from '../middleware/auth';
+import { z } from 'zod';
 
 export async function signup(req: Request, res: Response): Promise<void> {
   try {
@@ -170,5 +171,109 @@ export async function getCurrentUser(req: AuthRequest, res: Response): Promise<v
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({ error: 'Failed to get user' });
+  }
+}
+
+export async function forgotPassword(req: Request, res: Response): Promise<void> {
+  try {
+    const { email } = req.body;
+
+    // Validate input
+    if (!email) {
+      res.status(400).json({ error: 'Email is required' });
+      return;
+    }
+
+    // Find user
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      // Don't reveal if email exists or not for security
+      res.json({ message: 'If an account with that email exists, a password reset link has been sent.' });
+      return;
+    }
+
+    // Generate reset token (using crypto for security)
+    const resetToken = require('crypto').randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // Save reset token to user
+    user.resetToken = resetToken;
+    user.resetTokenExpiry = resetTokenExpiry;
+    await user.save();
+
+    // Get frontend URL from environment or default
+    // Use localhost for development if no env var or if it's production URL
+    const envFrontendUrl = process.env.FRONTEND_URL;
+    const isProductionUrl = envFrontendUrl && envFrontendUrl.includes('edutrack.store');
+    const frontendUrl = isProductionUrl ? 'http://localhost:8080' : (envFrontendUrl || 'http://localhost:8080');
+
+    // Send password reset email
+    try {
+      await sendPasswordResetEmail(user.email, user.name, resetToken, frontendUrl);
+      console.log('[FORGOT PASSWORD] Reset email sent successfully to:', user.email);
+      console.log('[FORGOT PASSWORD] Reset link:', `${frontendUrl}/reset-password?token=${resetToken}`);
+    } catch (emailError) {
+      console.error('Failed to send password reset email:', emailError);
+      // Don't fail the request, just log the error
+    }
+
+    res.json({
+      message: 'If an account with that email exists, a password reset link has been sent.',
+      resetLink: `${frontendUrl}/reset-password?token=${resetToken}` // Include link in response for testing
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Failed to process password reset request' });
+  }
+}
+
+export async function resetPassword(req: Request, res: Response): Promise<void> {
+  try {
+    const { token, password } = req.body;
+
+    // Validate input
+    if (!token || !password) {
+      res.status(400).json({ error: 'Token and password are required' });
+      return;
+    }
+
+    // Validate password strength
+    const passwordValidation = z.string()
+      .min(8, "At least 8 characters")
+      .regex(/[A-Z]/, "One uppercase letter")
+      .regex(/[a-z]/, "One lowercase letter")
+      .regex(/[0-9]/, "One number")
+      .safeParse(password);
+
+    if (!passwordValidation.success) {
+      const errors = passwordValidation.error.errors.map(e => e.message).join(", ");
+      res.status(400).json({ error: `Password requirements not met: ${errors}` });
+      return;
+    }
+
+    // Find user with valid reset token
+    const user = await User.findOne({
+      resetToken: token,
+      resetTokenExpiry: { $gt: new Date() }
+    });
+
+    if (!user) {
+      res.status(400).json({ error: 'Invalid or expired reset token' });
+      return;
+    }
+
+    // Hash new password
+    const hashedPassword = await hashPassword(password);
+
+    // Update user password and clear reset token
+    user.password = hashedPassword;
+    user.resetToken = undefined;
+    user.resetTokenExpiry = undefined;
+    await user.save();
+
+    res.json({ message: 'Password has been reset successfully' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Failed to reset password' });
   }
 }
