@@ -3,15 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Users, 
-  UserCheck, 
-  UserX, 
-  Clock, 
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Users,
+  UserCheck,
+  UserX,
+  Clock,
   RefreshCw,
   QrCode,
   TrendingUp,
-  Calendar
+  Calendar,
+  Mail,
+  GraduationCap
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { InviteStudentForm } from "./InviteStudentForm";
@@ -31,6 +34,7 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [studentsPresent, setStudentsPresent] = useState(0);
   const [totalStudents, setTotalStudents] = useState(0);
+  const [students, setStudents] = useState<any[]>([]);
   const [teacherData, setTeacherData] = useState<any>(null);
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
   const [studentsByClass, setStudentsByClass] = useState<Record<string, number>>({});
@@ -63,9 +67,10 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
         const studentsRes = await fetch(`${API_URL}/users/teacher/students`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        
+
         if (!studentsRes.ok) throw new Error('Failed to fetch students');
         const students = await studentsRes.json();
+        setStudents(students);
         setTotalStudents(students.length);
 
         // Count students by class
@@ -366,9 +371,154 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
     );
   }
 
+  if (activeView === 'students') {
+    console.log('[studentsView] Rendering students view');
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-foreground">My Students</h2>
+          <Badge variant="outline" className="text-education-info border-education-info">
+            Computer Science Department
+          </Badge>
+        </div>
+
+        <Card className="bg-gradient-card">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <GraduationCap className="w-5 h-5 text-education-primary" />
+              <span>Student List</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {students.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Class</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>Joined</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {students.map((student) => (
+                    <TableRow key={student._id}>
+                      <TableCell className="font-medium">{student.name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <span>{student.email}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{student.class || 'Not assigned'}</Badge>
+                      </TableCell>
+                      <TableCell>{student.department || 'Not assigned'}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(student.createdAt).toLocaleDateString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8">
+                <GraduationCap className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">No students yet.</p>
+                <p className="text-sm text-muted-foreground">Start by inviting students to your classes.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (activeView === 'profile') {
+    console.log('[profileView] Rendering profile view');
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-foreground">My Profile</h2>
+          <Badge variant="outline" className="text-education-info border-education-info">
+            Computer Science Department
+          </Badge>
+        </div>
+
+        <Card className="bg-gradient-card">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Users className="w-5 h-5 text-education-primary" />
+              <span>Teacher Information</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {teacherData ? (
+              <div className="space-y-4">
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 rounded-full bg-education-primary/10 flex items-center justify-center">
+                    <Users className="w-8 h-8 text-education-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">{teacherData.name}</h3>
+                    <p className="text-muted-foreground">Teacher</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <Mail className="w-5 h-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="font-medium">{teacherData.email}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-3">
+                      <GraduationCap className="w-5 h-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Department</p>
+                        <Badge variant="outline" className="text-education-info border-education-info">
+                          {teacherData.department}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <Calendar className="w-5 h-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Joined</p>
+                        <p className="font-medium">
+                          {new Date(teacherData.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">Loading profile information...</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // Default dashboard view
   console.log('[defaultDashboardView] Rendering default dashboard with activeView:', activeView);
-  
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

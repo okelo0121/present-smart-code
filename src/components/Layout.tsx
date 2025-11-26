@@ -33,6 +33,7 @@ export const Layout = ({ children, userType, activeView, onViewChange }: LayoutP
     { id: 'generate-code', label: 'Generate Code', icon: BookOpen },
     { id: 'invite-students', label: 'Invite Students', icon: UserPlus },
     { id: 'students', label: 'Students', icon: Users },
+    { id: 'profile', label: 'Profile', icon: User },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
   ];
 
@@ -85,8 +86,8 @@ export const Layout = ({ children, userType, activeView, onViewChange }: LayoutP
                     key={item.id}
                     variant={activeView === item.id ? "default" : "ghost"}
                     className={`w-full justify-start transition-smooth ${
-                      activeView === item.id 
-                        ? "bg-gradient-primary text-white shadow-soft" 
+                      activeView === item.id
+                        ? "bg-gradient-primary text-white shadow-soft"
                         : "hover:bg-secondary/50"
                     }`}
                     onClick={() => onViewChange(item.id)}
