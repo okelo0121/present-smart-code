@@ -206,6 +206,9 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
 
     // Send password reset email
     try {
+      console.log('[FORGOT PASSWORD] Attempting to send reset email to:', user.email);
+      console.log('[FORGOT PASSWORD] RESEND_API_KEY present:', !!process.env.RESEND_API_KEY);
+      console.log('[FORGOT PASSWORD] Frontend URL:', frontendUrl);
       await sendPasswordResetEmail(user.email, user.name, resetToken, frontendUrl);
       console.log('[FORGOT PASSWORD] Reset email sent successfully to:', user.email);
       console.log('[FORGOT PASSWORD] Reset link:', `${frontendUrl}/reset-password?token=${resetToken}`);

@@ -69,8 +69,10 @@ export async function sendInviteEmail(
       console.log('[EMAIL] Dev mode - Would send invite to:', studentEmail);
       return;
     }
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@edutrack.store';
+    console.log('[EMAIL] Sending invite from:', fromEmail);
     await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'noreply@present-smart.com',
+      from: fromEmail,
       to: studentEmail,
       subject: `${teacherName} invited you to Present Smart`,
       html: emailContent,
@@ -120,8 +122,10 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<voi
       console.log('[EMAIL] Dev mode - Would send email to:', email);
       return;
     }
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@edutrack.store';
+    console.log('[EMAIL] Sending welcome from:', fromEmail);
     await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'noreply@present-smart.com',
+      from: fromEmail,
       to: email,
       subject: 'Welcome to Present Smart!',
       html: emailContent,
@@ -182,8 +186,10 @@ export async function sendPasswordResetEmail(
       console.log('[EMAIL] Reset link:', resetLink);
       return;
     }
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@edutrack.store';
+    console.log('[EMAIL] Sending password reset from:', fromEmail);
     await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'noreply@present-smart.com',
+      from: fromEmail,
       to: email,
       subject: 'Reset Your Present Smart Password',
       html: emailContent,
