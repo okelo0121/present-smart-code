@@ -418,14 +418,21 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
                   <div className="flex items-center space-x-3">
                     <CheckCircle className="w-5 h-5 text-education-success" />
                     <div>
-                      <p className="font-medium">{new Date(record.submitted_at).toLocaleDateString()}</p>
+                      <p className="font-medium">
+                        {new Date(record.submittedAt).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </p>
                       <p className="text-sm text-muted-foreground">{studentInfo.class}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <Badge className="bg-education-success">Present</Badge>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(record.submitted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(record.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                 </div>
