@@ -243,7 +243,7 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
       .safeParse(password);
 
     if (!passwordValidation.success) {
-      const errors = passwordValidation.error.errors.map(e => e.message).join(", ");
+      const errors = passwordValidation.error.errors.map((e: any) => e.message).join(", ");
       res.status(400).json({ error: `Password requirements not met: ${errors}` });
       return;
     }
