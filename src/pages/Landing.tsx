@@ -17,6 +17,16 @@ import {
 const Landing = () => {
   const navigate = useNavigate();
 
+  // Check if user is viewing from mobile app
+  const isMobileApp = () => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    // Check for common mobile app user agents or webview indicators
+    return userAgent.includes('wv') || // WebView
+           userAgent.includes('mobileapp') ||
+           (window as any).ReactNativeWebView !== undefined || // React Native WebView
+           (window as any).webkit !== undefined && (window as any).webkit.messageHandlers !== undefined; // iOS WebView
+  };
+
   const features = [
     {
       icon: Clock,
@@ -118,15 +128,17 @@ const Landing = () => {
               Get Started Free
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => window.open('https://github.com/okelo0121/present-smart-code/releases/download/v1.0.0/app-release.apk', '_blank')}
-              className="text-lg px-8 py-6 hover-scale"
-            >
-              <Smartphone className="mr-2 h-5 w-5" />
-              Download App
-            </Button>
+            {!isMobileApp() && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => window.open('https://github.com/okelo0121/present-smart-code/releases/download/v1.0.0/app-release.apk', '_blank')}
+                className="text-lg px-8 py-6 hover-scale"
+              >
+                <Smartphone className="mr-2 h-5 w-5" />
+                Download App
+              </Button>
+            )}
             <Button
               size="lg"
               variant="outline"
