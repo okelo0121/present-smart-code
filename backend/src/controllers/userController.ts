@@ -87,7 +87,7 @@ export async function inviteStudent(req: AuthRequest, res: Response): Promise<vo
     await invite.save();
 
     // Send invite email
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8080';
     try {
       await sendInviteEmail(email, name, teacher.name, token, frontendUrl);
     } catch (emailError) {

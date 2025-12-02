@@ -29,7 +29,7 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: function(origin, callback) {
+  origin: function (origin, callback) {
     // allow requests with no origin (like Postman, curl)
     if (!origin) return callback(null, true);
 
@@ -98,10 +98,10 @@ async function connectDatabase(): Promise<void> {
 async function startServer(): Promise<void> {
   try {
     await connectDatabase();
-    
+
     const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`✓ Server running on http://localhost:${PORT}`);
-      console.log(`✓ Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+      console.log(`✓ Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:8080'}`);
     });
 
     // Handle server errors
