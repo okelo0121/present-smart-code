@@ -63,7 +63,13 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      // Only redirect if NOT handling an invitation
+      const params = new URLSearchParams(window.location.search);
+      const isInvite = params.get('token') && params.get('type') === 'student';
+
+      if (!isInvite) {
+        navigate('/dashboard');
+      }
     }
   }, [user, navigate]);
 
