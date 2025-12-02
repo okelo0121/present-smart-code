@@ -216,6 +216,7 @@ const Auth = () => {
             });
             // Auto sign-in for invited students
             await signIn(email, password);
+            navigate('/dashboard');
           } else {
             toast({
               title: "Account Created!",
