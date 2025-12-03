@@ -45,10 +45,7 @@ export async function sendInviteEmail(
             Accept Invitation
           </a>
           
-          <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
-            Or copy and paste this link in your browser: <br/>
-            <code style="background-color: #f3f4f6; padding: 5px 10px; border-radius: 4px;">${inviteLink}</code>
-          </p>
+          
           
           <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
             This invitation expires in 7 days.

@@ -53,21 +53,27 @@ export async function signup(req: Request, res: Response): Promise<void> {
       });
       await teacher.save();
     } else if (finalUserType === 'student') {
+      let teacherId = null;
+
+      // If invite token provided, get teacher ID from it
+      if (inviteToken) {
+        const invite = await StudentInvite.findOne({ token: inviteToken });
+        if (invite) {
+          teacherId = invite.createdBy;
+          // Mark as used
+          invite.used = true;
+          await invite.save();
+        }
+      }
+
       const student = new Student({
         userId: user._id,
         email: user.email,
         name,
-        phone: phone || null
+        phone: phone || null,
+        teacherId: teacherId // Link to teacher
       });
       await student.save();
-
-      // Mark invite as used if provided
-      if (inviteToken) {
-        await StudentInvite.findOneAndUpdate(
-          { token: inviteToken },
-          { used: true }
-        );
-      }
     }
 
     // Send welcome email
@@ -274,7 +280,47 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
 
     res.json({ message: 'Password has been reset successfully' });
   } catch (error) {
-    console.error('Reset password error:', error);
     res.status(500).json({ error: 'Failed to reset password' });
+  }
+}
+
+export async function debugCleanup(req: Request, res: Response): Promise<void> {
+  try {
+    const { email } = req.params;
+    if (!email) {
+      res.status(400).json({ error: 'Email is required' });
+      return;
+    }
+
+    console.log(`[DEBUG] Cleaning up user data for: ${email}`);
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (user) {
+      await User.deleteOne({ _id: user._id });
+      console.log(`[DEBUG] Deleted user document for ${email}`);
+    }
+
+    const student = await Student.findOne({ email: email.toLowerCase() });
+    if (student) {
+      await Student.deleteOne({ _id: student._id });
+      console.log(`[DEBUG] Deleted student profile for ${email}`);
+    }
+
+    const teacher = await Teacher.findOne({ email: email.toLowerCase() });
+    if (teacher) {
+      await Teacher.deleteOne({ _id: teacher._id });
+      console.log(`[DEBUG] Deleted teacher profile for ${email}`);
+    }
+
+    const invite = await StudentInvite.findOne({ email: email.toLowerCase() });
+    if (invite) {
+      await StudentInvite.deleteOne({ _id: invite._id });
+      console.log(`[DEBUG] Deleted invite for ${email}`);
+    }
+
+    res.json({ message: `Cleanup complete for ${email}` });
+  } catch (error) {
+    console.error('Cleanup error:', error);
+    res.status(500).json({ error: 'Failed to cleanup user' });
   }
 }

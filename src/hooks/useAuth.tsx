@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signUp = async (
     email: string,
     password: string,
-    metadata?: { name: string; userType: 'teacher' | 'student' },
+    metadata?: { name: string; userType: 'teacher' | 'student'; phone?: string },
     inviteToken?: string
   ) => {
     try {
