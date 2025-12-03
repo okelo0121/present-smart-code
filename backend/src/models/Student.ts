@@ -7,6 +7,7 @@ export interface IStudent extends Document {
   email: string;
   department?: string;
   class?: string;
+  externalId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,6 +40,11 @@ const studentSchema = new Schema<IStudent>({
   class: {
     type: String,
     default: null
+  },
+  externalId: {
+    type: String,
+    default: null,
+    index: true
   },
   createdAt: {
     type: Date,

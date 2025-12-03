@@ -29,7 +29,7 @@ interface TeacherDashboardProps {
 
 export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
   console.log('[TeacherDashboard] Rendered with activeView:', activeView);
-  
+
   const [currentCode, setCurrentCode] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [studentsPresent, setStudentsPresent] = useState(0);
@@ -58,7 +58,7 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
         const teacherRes = await fetch(`${API_URL}/users/teacher/profile`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        
+
         if (!teacherRes.ok) throw new Error('Failed to fetch teacher profile');
         const teacher = await teacherRes.json();
         setTeacherData(teacher);
@@ -84,7 +84,7 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
         const statsRes = await fetch(`${API_URL}/attendance/stats`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        
+
         if (!statsRes.ok) throw new Error('Failed to fetch attendance stats');
         const stats = await statsRes.json();
         setAttendanceData(stats.stats || []);
@@ -100,7 +100,7 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
     console.log('[generateCode] Button clicked!');
     console.log('[generateCode] Teacher data:', teacherData);
     console.log('[generateCode] currentCode state:', currentCode);
-    
+
     if (!teacherData) {
       console.warn('[generateCode] Teacher data not loaded yet');
       return;
@@ -128,7 +128,7 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
         console.error('[generateCode] Error response:', errorData);
         throw new Error(errorData.error || 'Failed to generate code');
       }
-      
+
       const data = await response.json();
       console.log('[generateCode] Success:', data);
 
@@ -186,7 +186,7 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
 
         if (!response.ok) throw new Error('Failed to fetch attendance');
         const data = await response.json();
-        
+
         if (data.stats && data.stats.length > 0) {
           const todayStats = data.stats[0];
           setStudentsPresent(todayStats.present);
@@ -223,7 +223,7 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <InviteStudentForm />
-          
+
           <Card className="bg-gradient-card">
             <CardHeader>
               <CardTitle>How It Works</CardTitle>
@@ -314,8 +314,8 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
                   <p className="text-muted-foreground">No active attendance session</p>
                 </div>
               )}
-              
-              <Button 
+
+              <Button
                 onClick={() => {
                   console.log('[Button] Clicked! Current disabled state:', !!currentCode, 'currentCode value:', currentCode);
                   generateCode();
@@ -350,7 +350,7 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
                   <p className="text-sm text-muted-foreground">Absent</p>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Attendance Rate</span>
@@ -626,10 +626,53 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
       {/* Recent Attendance Reports */}
       <Card className="bg-gradient-card">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Calendar className="w-5 h-5 text-education-primary" />
-            <span>Recent Attendance Reports</span>
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center space-x-2">
+              <Calendar className="w-5 h-5 text-education-primary" />
+              <span>Recent Attendance Reports</span>
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  const token = getAuthToken();
+                  if (!token) return;
+
+                  const response = await fetch(`${API_URL}/attendance/export`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                  });
+
+                  if (!response.ok) throw new Error('Failed to export CSV');
+
+                  const blob = await response.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `attendance_export_${new Date().toISOString().split('T')[0]}.csv`;
+                  document.body.appendChild(a);
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                  document.body.removeChild(a);
+
+                  toast({
+                    title: "Export Successful",
+                    description: "Attendance data has been downloaded.",
+                  });
+                } catch (error) {
+                  console.error('Export error:', error);
+                  toast({
+                    title: "Export Failed",
+                    description: "Could not download attendance data.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -649,14 +692,14 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
                       <p className="font-medium">{day.rate}%</p>
                       <Progress value={day.rate} className="w-20" />
                     </div>
-                    <Badge 
+                    <Badge
                       variant={day.rate >= 90 ? "default" : day.rate >= 80 ? "secondary" : "destructive"}
                       className={
-                        day.rate >= 90 
-                          ? "bg-education-success" 
-                          : day.rate >= 80 
-                          ? "bg-education-warning" 
-                          : ""
+                        day.rate >= 90
+                          ? "bg-education-success"
+                          : day.rate >= 80
+                            ? "bg-education-warning"
+                            : ""
                       }
                     >
                       {day.rate >= 90 ? "Excellent" : day.rate >= 80 ? "Good" : "Needs Attention"}
