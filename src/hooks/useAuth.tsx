@@ -10,7 +10,7 @@ interface AuthUser {
 
 interface AuthContextType {
   user: AuthUser | null;
-  signUp: (email: string, password: string, metadata?: { name: string; userType: 'teacher' | 'student' }, inviteToken?: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, metadata?: { name: string; userType: 'teacher' | 'student'; phone?: string }, inviteToken?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
   loading: boolean;

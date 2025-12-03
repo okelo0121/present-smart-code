@@ -46,11 +46,12 @@ export async function createLesson(req: AuthRequest, res: Response): Promise<voi
         // In a real app, we'd use a queue for this. For MVP, we'll do it async but not block response too much.
         // We'll fire and forget the notifications to ensure fast response time.
         students.forEach(async (student) => {
-            // Assuming student has a 'phone' field. If not, we'd need to add it. 
-            // For now, we'll use a placeholder or email if phone is missing, 
-            // but the requirement was SMS. Let's assume we'd send to a mock number if missing.
-            const phone = (student as any).phone || '555-0000';
-            await notificationService.sendSMS(phone, smsMessage);
+            const phone = student.phone;
+            if (phone) {
+                await notificationService.sendSMS(phone, smsMessage);
+            } else {
+                console.log(`[Lesson] Skipping SMS for student ${student.name} (no phone number)`);
+            }
         });
 
         res.status(201).json({

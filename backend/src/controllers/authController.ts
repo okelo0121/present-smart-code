@@ -11,7 +11,7 @@ import { z } from 'zod';
 
 export async function signup(req: Request, res: Response): Promise<void> {
   try {
-    const { email, password, name, userType, department, inviteToken } = req.body;
+    const { email, password, name, userType, department, inviteToken, phone } = req.body;
 
     // If invite token is provided, force userType to 'student' for security
     const finalUserType = inviteToken ? 'student' : userType;
@@ -56,7 +56,8 @@ export async function signup(req: Request, res: Response): Promise<void> {
       const student = new Student({
         userId: user._id,
         email: user.email,
-        name
+        name,
+        phone: phone || null
       });
       await student.save();
 

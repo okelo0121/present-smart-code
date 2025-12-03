@@ -26,6 +26,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [department, setDepartment] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -178,7 +179,7 @@ const Auth = () => {
         }
 
         const userType: 'student' | 'teacher' = isStudentSignup ? 'student' : 'teacher';
-        const metadata = { name, userType, ...(department && { department }) };
+        const metadata = { name, userType, ...(department && { department }), ...(phone && { phone }) };
         const { error } = await signUp(email, password, metadata, inviteToken || undefined);
         if (error) {
           // Check if user already exists
@@ -312,6 +313,21 @@ const Auth = () => {
                     </div>
                   )}
                 </>
+              )}
+
+              {isStudentSignup && (
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+1234567890"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">Required for SMS notifications</p>
+                </div>
               )}
 
               <div className="space-y-2">
