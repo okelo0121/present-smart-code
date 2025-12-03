@@ -9,6 +9,7 @@ import mongoose from 'mongoose';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import attendanceRoutes from './routes/attendanceRoutes';
+import lessonRoutes from './routes/lessonRoutes';
 
 // Debug: Log environment variables
 console.log('[CONFIG] RESEND_API_KEY:', process.env.RESEND_API_KEY ? '✓ Set' : '✗ Not set');
@@ -59,6 +60,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/lessons', lessonRoutes);
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
