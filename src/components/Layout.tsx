@@ -46,7 +46,7 @@ export const Layout = ({ children, userType, activeView, onViewChange }: LayoutP
   const navItems = userType === 'teacher' ? teacherNavItems : studentNavItems;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-accent/20">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
       <header className="bg-gradient-card border-b border-border backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
@@ -75,36 +75,36 @@ export const Layout = ({ children, userType, activeView, onViewChange }: LayoutP
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar Navigation */}
-          <Card className="lg:col-span-1 p-6 bg-gradient-card h-fit">
-            <nav className="space-y-2">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Button
-                    key={item.id}
-                    variant={activeView === item.id ? "default" : "ghost"}
-                    className={`w-full justify-start transition-smooth ${activeView === item.id
-                        ? "bg-gradient-primary text-white shadow-soft"
-                        : "hover:bg-secondary/50"
-                      }`}
-                    onClick={() => onViewChange(item.id)}
-                  >
-                    <Icon className="w-4 h-4 mr-2" />
-                    {item.label}
-                  </Button>
-                );
-              })}
-            </nav>
-          </Card>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar Navigation */}
+        <aside className="w-64 hidden lg:block border-r bg-card/50 backdrop-blur-sm overflow-y-auto">
+          <nav className="p-4 space-y-2">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Button
+                  key={item.id}
+                  variant={activeView === item.id ? "default" : "ghost"}
+                  className={`w-full justify-start transition-smooth ${activeView === item.id
+                    ? "bg-gradient-primary text-white shadow-soft"
+                    : "hover:bg-secondary/50"
+                    }`}
+                  onClick={() => onViewChange(item.id)}
+                >
+                  <Icon className="w-4 h-4 mr-2" />
+                  {item.label}
+                </Button>
+              );
+            })}
+          </nav>
+        </aside>
 
-          {/* Main Content */}
-          <div className="lg:col-span-3">
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-background via-secondary/20 to-accent/20 p-6">
+          <div className="container mx-auto max-w-7xl">
             {children}
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

@@ -217,7 +217,7 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-foreground">Invite Students</h2>
           <Badge variant="outline" className="text-education-info border-education-info">
-            Computer Science Department
+            {teacherData?.department || 'Department'}
           </Badge>
         </div>
 
@@ -280,7 +280,7 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-foreground">Generate Attendance Code</h2>
           <Badge variant="outline" className="text-education-info border-education-info">
-            Computer Science Department
+            {teacherData?.department || 'Department'}
           </Badge>
         </div>
 
@@ -378,7 +378,7 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-foreground">My Students</h2>
           <Badge variant="outline" className="text-education-info border-education-info">
-            Computer Science Department
+            {teacherData?.department || 'Department'}
           </Badge>
         </div>
 
@@ -442,7 +442,7 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-foreground">My Profile</h2>
           <Badge variant="outline" className="text-education-info border-education-info">
-            Computer Science Department
+            {teacherData?.department || 'Department'}
           </Badge>
         </div>
 
@@ -525,7 +525,7 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-foreground">Post Lesson & Notify</h2>
           <Badge variant="outline" className="text-education-info border-education-info">
-            Computer Science Department
+            {teacherData?.department || 'Department'}
           </Badge>
         </div>
 
@@ -613,7 +613,7 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-foreground">Teacher Dashboard</h2>
         <Badge variant="outline" className="text-education-info border-education-info">
-          Computer Science Department
+          {teacherData?.department || 'Department'}
         </Badge>
       </div>
 
