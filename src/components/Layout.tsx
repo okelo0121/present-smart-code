@@ -131,7 +131,7 @@ export const Layout = ({ children, userType, activeView, onViewChange }: LayoutP
 
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto bg-gradient-to-br from-background via-secondary/20 to-accent/20 p-4 md:p-6">
-          <div className="container mx-auto max-w-7xl">
+          <div className="w-full h-full">
             {children}
           </div>
         </main>
