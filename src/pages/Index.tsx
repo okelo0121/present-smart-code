@@ -55,13 +55,16 @@ const Index = () => {
   const currentView = activeView === 'dashboard' && userType === 'student' ? 'attendance' : activeView;
 
   return (
-    <Layout 
-      userType={userType} 
+    <Layout
+      userType={userType}
       activeView={currentView || defaultView}
       onViewChange={setActiveView}
     >
       {userType === 'teacher' ? (
-        <TeacherDashboard activeView={currentView || defaultView} />
+        <TeacherDashboard
+          activeView={currentView || defaultView}
+          onViewChange={setActiveView}
+        />
       ) : (
         <StudentInterface activeView={currentView || defaultView} />
       )}

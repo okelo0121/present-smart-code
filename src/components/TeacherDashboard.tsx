@@ -12,15 +12,17 @@ import { PostLesson } from "./dashboard/PostLesson";
 import { StudentsByClass } from "./dashboard/StudentsByClass";
 import { RecentAttendance } from "./dashboard/RecentAttendance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const API_URL = `${BASE_URL.replace(/\/$/, '')}/api`;
 
 interface TeacherDashboardProps {
   activeView: string;
+  onViewChange?: (view: string) => void;
 }
 
-export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
+export const TeacherDashboard = ({ activeView, onViewChange }: TeacherDashboardProps) => {
   console.log('[TeacherDashboard] Rendered with activeView:', activeView);
 
   const [currentCode, setCurrentCode] = useState<string | null>(null);
@@ -31,6 +33,7 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
   const [teacherData, setTeacherData] = useState<Teacher | null>(null);
   const [attendanceData, setAttendanceData] = useState<AttendanceStats[]>([]);
   const [studentsByClass, setStudentsByClass] = useState<Record<string, number>>({});
+  const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -69,7 +72,8 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
         // Count students by class
         const classCounts: Record<string, number> = {};
         studentsData.forEach((student: Student) => {
-          classCounts[student.class] = (classCounts[student.class] || 0) + 1;
+          const className = student.class || 'Unassigned';
+          classCounts[className] = (classCounts[className] || 0) + 1;
         });
         setStudentsByClass(classCounts);
 
@@ -284,13 +288,27 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-foreground">My Students</h2>
-          <Badge variant="outline" className="text-education-info border-education-info">
-            {teacherData?.department || 'Department'}
-          </Badge>
+          <h2 className="text-2xl font-bold text-foreground">
+            {selectedClass ? `${selectedClass} Students` : 'My Students'}
+          </h2>
+          <div className="flex items-center gap-2">
+            {selectedClass && (
+              <Button variant="ghost" size="sm" onClick={() => setSelectedClass(null)}>
+                Clear Filter
+              </Button>
+            )}
+            <Badge variant="outline" className="text-education-info border-education-info">
+              {teacherData?.department || 'Department'}
+            </Badge>
+          </div>
         </div>
 
-        <StudentList students={students} />
+        <StudentList
+          students={selectedClass
+            ? students.filter(s => (s.class || 'Unassigned') === selectedClass)
+            : students
+          }
+        />
       </div>
     );
   }
@@ -335,7 +353,13 @@ export const TeacherDashboard = ({ activeView }: TeacherDashboardProps) => {
         attendanceRate={attendanceRate}
       />
 
-      <StudentsByClass studentsByClass={studentsByClass} />
+      <StudentsByClass
+        studentsByClass={studentsByClass}
+        onClassClick={(className) => {
+          setSelectedClass(className);
+          onViewChange?.('students');
+        }}
+      />
 
       <RecentAttendance attendanceData={attendanceData} />
     </div>
