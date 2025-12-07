@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { InviteStudentForm } from "./InviteStudentForm";
@@ -293,9 +294,15 @@ export const TeacherDashboard = ({ activeView, onViewChange }: TeacherDashboardP
           </h2>
           <div className="flex items-center gap-2">
             {selectedClass && (
-              <Button variant="ghost" size="sm" onClick={() => setSelectedClass(null)}>
-                Clear Filter
-              </Button>
+              <>
+                <Button variant="outline" size="sm" onClick={() => onViewChange?.('dashboard')} className="gap-2">
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to Dashboard
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedClass(null)}>
+                  Clear Filter
+                </Button>
+              </>
             )}
             <Badge variant="outline" className="text-education-info border-education-info">
               {teacherData?.department || 'Department'}
