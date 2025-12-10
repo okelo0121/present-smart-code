@@ -10,6 +10,7 @@ import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import attendanceRoutes from './routes/attendanceRoutes';
 import lessonRoutes from './routes/lessonRoutes';
+import subscriptionRoutes from './routes/subscription.routes';
 
 // Debug: Log environment variables
 console.log('[CONFIG] RESEND_API_KEY:', process.env.RESEND_API_KEY ? '✓ Set' : '✗ Not set');
@@ -61,6 +62,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/lessons', lessonRoutes);
+app.use('/api/subscription', subscriptionRoutes);
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {

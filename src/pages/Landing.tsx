@@ -11,20 +11,69 @@ import {
   ArrowRight,
   BarChart3,
   Mail,
-  Smartphone
+  Smartphone,
+  Loader2
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 const Landing = () => {
   const navigate = useNavigate();
+
+  const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [isSubscribing, setIsSubscribing] = useState(false);
 
   // Check if user is viewing from mobile app
   const isMobileApp = () => {
     const userAgent = navigator.userAgent.toLowerCase();
     // Check for common mobile app user agents or webview indicators
     return userAgent.includes('wv') || // WebView
-           userAgent.includes('mobileapp') ||
-           (window as any).ReactNativeWebView !== undefined || // React Native WebView
-           (window as any).webkit !== undefined && (window as any).webkit.messageHandlers !== undefined; // iOS WebView
+      userAgent.includes('mobileapp') ||
+      (window as any).ReactNativeWebView !== undefined || // React Native WebView
+      (window as any).webkit !== undefined && (window as any).webkit.messageHandlers !== undefined; // iOS WebView
+  };
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setIsSubscribing(true);
+    try {
+      const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const API_URL = BASE_URL.endsWith('/api') ? BASE_URL : `${BASE_URL.replace(/\/$/, '')}/api`;
+
+      const response = await fetch(`${API_URL}/subscription/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Subscribed!",
+          description: "You have successfully subscribed to our newsletter.",
+        });
+        setEmail("");
+      } else {
+        toast({
+          title: "Error",
+          description: data.message || "Failed to subscribe.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubscribing(false);
+    }
   };
 
   const features = [
@@ -96,7 +145,7 @@ const Landing = () => {
               EduTrack
             </span>
           </div>
-          <Button 
+          <Button
             onClick={() => navigate('/auth')}
             variant="outline"
             className="hover-scale"
@@ -116,7 +165,7 @@ const Landing = () => {
             </span>
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Transform how you manage classroom attendance with secure, time-sensitive codes 
+            Transform how you manage classroom attendance with secure, time-sensitive codes
             and real-time analytics. Perfect for teachers and educational institutions.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -181,8 +230,8 @@ const Landing = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
-              <Card 
-                key={index} 
+              <Card
+                key={index}
                 className="bg-gradient-card border-border/50 hover:shadow-large transition-smooth hover-scale group"
               >
                 <CardContent className="p-6">
@@ -243,11 +292,11 @@ const Landing = () => {
                 Ready to Simplify Attendance?
               </h2>
               <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-                Join hundreds of educators who trust EduTrack for accurate, 
+                Join hundreds of educators who trust EduTrack for accurate,
                 hassle-free attendance management.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button 
+                <Button
                   size="lg"
                   onClick={() => navigate('/auth')}
                   variant="secondary"
@@ -256,6 +305,33 @@ const Landing = () => {
                   <Mail className="mr-2 h-5 w-5" />
                   Get Started Now
                 </Button>
+              </div>
+
+              {/* Newsletter Subscription */}
+              <div className="mt-12 max-w-md mx-auto">
+                <p className="text-white/80 mb-4 text-sm">Or subscribe to our newsletter for updates</p>
+                <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-offset-0 focus-visible:ring-white/30"
+                    required
+                  />
+                  <Button
+                    type="submit"
+                    variant="secondary"
+                    disabled={isSubscribing}
+                    className="whitespace-nowrap"
+                  >
+                    {isSubscribing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Subscribe"
+                    )}
+                  </Button>
+                </form>
               </div>
             </CardContent>
           </Card>
