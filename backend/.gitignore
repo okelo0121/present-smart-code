@@ -9,7 +9,7 @@ yarn.lock
 .env
 .env.local
 .env.*.local
-
+.env.example
 # Build output
 dist
 build
@@ -43,3 +43,4 @@ coverage
 # OS specific
 Thumbs.db
 .DS_Store
+.env

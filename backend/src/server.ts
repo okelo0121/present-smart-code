@@ -16,6 +16,7 @@ import subscriptionRoutes from './routes/subscription.routes';
 console.log('[CONFIG] RESEND_API_KEY:', process.env.RESEND_API_KEY ? '✓ Set' : '✗ Not set');
 console.log('[CONFIG] MONGODB_URI:', process.env.MONGODB_URI ? '✓ Set' : '✗ Not set');
 console.log('[CONFIG] JWT_SECRET:', process.env.JWT_SECRET ? '✓ Set' : '✗ Not set');
+console.log('[CONFIG] BREVO_API_KEY:', process.env.BREVO_API_KEY ? '✓ Set' : '✗ Not set');
 
 const app: Express = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
