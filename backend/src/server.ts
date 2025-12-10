@@ -36,8 +36,13 @@ app.use(cors({
     // allow requests with no origin (like Postman, curl)
     if (!origin) return callback(null, true);
 
+    // Allow vercel.app and onrender.com subdomains (for Preview/Production)
+    if (origin.endsWith('.vercel.app') || origin.endsWith('.onrender.com')) {
+      return callback(null, true);
+    }
+
     // Allow localhost origins with any port for development
-    if (origin && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) {
+    if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
       callback(null, true);
     } else if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
