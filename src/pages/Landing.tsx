@@ -1,3 +1,4 @@
+import { NewsletterPopup } from "@/components/NewsletterPopup";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
@@ -24,6 +25,15 @@ const Landing = () => {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [showNewsletter, setShowNewsletter] = useState(false);
+
+  useEffect(() => {
+    // Show newsletter popup after 5 seconds
+    const timer = setTimeout(() => {
+      setShowNewsletter(true);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Check if user is viewing from mobile app
   const isMobileApp = () => {
@@ -354,6 +364,10 @@ const Landing = () => {
           </div>
         </div>
       </footer>
+      <NewsletterPopup
+        isOpen={showNewsletter}
+        onClose={() => setShowNewsletter(false)}
+      />
     </div>
   );
 };
