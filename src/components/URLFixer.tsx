@@ -19,11 +19,11 @@ export const URLFixer = () => {
 
             // Handle different variations of the prefix
             if (cleanSearch.startsWith('?/?/')) {
-                cleanSearch = cleanSearch.replace('?/?/', '/');
+                cleanSearch = cleanSearch.replace('?/?/', '');
             } else if (cleanSearch.startsWith('??/')) {
-                cleanSearch = cleanSearch.replace('??/', '/');
+                cleanSearch = cleanSearch.replace('??/', '');
             } else if (cleanSearch.startsWith('?/')) {
-                cleanSearch = cleanSearch.replace('?/', '/');
+                cleanSearch = cleanSearch.replace('?/', '');
             }
 
             // cleanSearch now looks like "auth&email=..." or "reset-password&token=..."
