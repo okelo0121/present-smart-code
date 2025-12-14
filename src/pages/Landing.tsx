@@ -28,9 +28,14 @@ const Landing = () => {
   const [showNewsletter, setShowNewsletter] = useState(false);
 
   useEffect(() => {
+    // Check if already shown in this session
+    const hasShown = sessionStorage.getItem("newsletter_shown");
+    if (hasShown) return;
+
     // Show newsletter popup after 5 seconds
     const timer = setTimeout(() => {
       setShowNewsletter(true);
+      sessionStorage.setItem("newsletter_shown", "true");
     }, 5000);
     return () => clearTimeout(timer);
   }, []);
