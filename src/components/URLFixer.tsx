@@ -11,39 +11,59 @@ export const URLFixer = () => {
         const search = window.location.search;
         const pathname = window.location.pathname;
 
-        // Case 1: URL is like https://domain.com/?/auth&email=...
-        if (search.includes('?/auth')) {
-            console.log('[URLFixer] Detected malformed URL pattern "?/auth"');
+        // Generic handler for all deep links using /?/pattern
+        if (search.startsWith('?/')) {
+            console.log('[URLFixer] Detected generic malformed URL pattern');
 
-            // Extract the query parameters part
-            // Remove the leading '?' and the '/?/auth' or '?/auth' prefix
             let cleanSearch = search;
-            if (cleanSearch.startsWith('?/?/auth')) {
-                cleanSearch = cleanSearch.replace('?/?/auth', '');
-            } else if (cleanSearch.startsWith('??/auth')) {
-                cleanSearch = cleanSearch.replace('??/auth', '');
-            } else if (cleanSearch.startsWith('?/auth')) {
-                cleanSearch = cleanSearch.replace('?/auth', '');
+
+            // Handle different variations of the prefix
+            if (cleanSearch.startsWith('?/?/')) {
+                cleanSearch = cleanSearch.replace('?/?/', '/');
+            } else if (cleanSearch.startsWith('??/')) {
+                cleanSearch = cleanSearch.replace('??/', '/');
+            } else if (cleanSearch.startsWith('?/')) {
+                cleanSearch = cleanSearch.replace('?/', '/');
             }
 
-            // If it starts with '&', change it to '?' for the new query string
-            if (cleanSearch.startsWith('&')) {
-                cleanSearch = '?' + cleanSearch.substring(1);
-            } else if (!cleanSearch.startsWith('?')) {
-                cleanSearch = '?' + cleanSearch;
+            // cleanSearch now looks like "auth&email=..." or "reset-password&token=..."
+            // We need to split the path from the query params
+
+            // If it contains & or ?, split there
+            let path = cleanSearch;
+            let query = "";
+
+            const firstAmp = cleanSearch.indexOf('&');
+            const firstQ = cleanSearch.indexOf('?');
+
+            let splitIndex = -1;
+            if (firstAmp !== -1 && firstQ !== -1) splitIndex = Math.min(firstAmp, firstQ);
+            else if (firstAmp !== -1) splitIndex = firstAmp;
+            else if (firstQ !== -1) splitIndex = firstQ;
+
+            if (splitIndex !== -1) {
+                path = cleanSearch.substring(0, splitIndex);
+                query = cleanSearch.substring(splitIndex);
+
+                // If the separator was &, change it to ? for the first param
+                if (query.startsWith('&')) {
+                    query = '?' + query.substring(1);
+                }
             }
 
-            // Fix the separators
-            if (cleanSearch.includes('~and~')) {
-                console.log('[URLFixer] Replacing "~and~" with "&"');
-                cleanSearch = cleanSearch.replace(/~and~/g, '&');
+            // Fix ~and~ separators in the query part
+            if (query.includes('~and~')) {
+                query = query.replace(/~and~/g, '&');
             }
 
-            const newPath = `/auth${cleanSearch}`;
+            const newPath = `/${path}${query}`;
             console.log('[URLFixer] Redirecting to:', newPath);
             navigate(newPath, { replace: true });
             return;
         }
+
+        // Keep the legacy specific check just in case, or remove if confident. 
+        // For now, I'll rely on the generic one above which covers ?/auth too.
 
         // Case 2: URL is correct path but has ~and~ separators
         // e.g. /auth?email=...~and~type=...
