@@ -1,7 +1,17 @@
 import { NewsletterPopup } from "@/components/NewsletterPopup";
+import { HeroDemo } from "@/components/HeroDemo";
+import { ROICalculator } from "@/components/ROICalculator";
+import { SecurityFeatures } from "@/components/SecurityFeatures";
+import { IntegrationsSection } from "@/components/IntegrationsSection";
+import { Testimonials } from "@/components/Testimonials";
+import { FeatureSpotlights } from "@/components/FeatureSpotlights";
+import { FAQSection } from "@/components/FAQSection";
+import { FinalCTA } from "@/components/FinalCTA";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+import { FadeInUp } from "@/components/FadeInUp";
+import { Footer } from "@/components/Footer";
 import {
   BookOpen,
   Clock,
@@ -11,9 +21,7 @@ import {
   Zap,
   ArrowRight,
   BarChart3,
-  Mail,
-  Smartphone,
-  Loader2
+  Smartphone
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
@@ -23,8 +31,6 @@ const Landing = () => {
   const navigate = useNavigate();
 
   const { toast } = useToast();
-  const [email, setEmail] = useState("");
-  const [isSubscribing, setIsSubscribing] = useState(false);
   const [showNewsletter, setShowNewsletter] = useState(false);
 
   useEffect(() => {
@@ -50,46 +56,7 @@ const Landing = () => {
       (window as any).webkit !== undefined && (window as any).webkit.messageHandlers !== undefined; // iOS WebView
   };
 
-  const handleSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
 
-    setIsSubscribing(true);
-    try {
-      const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const API_URL = BASE_URL.endsWith('/api') ? BASE_URL : `${BASE_URL.replace(/\/$/, '')}/api`;
-
-      const response = await fetch(`${API_URL}/subscription/subscribe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast({
-          title: "Subscribed!",
-          description: "You have successfully subscribed to our newsletter.",
-        });
-        setEmail("");
-      } else {
-        toast({
-          title: "Error",
-          description: data.message || "Failed to subscribe.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubscribing(false);
-    }
-  };
 
   const features = [
     {
@@ -170,63 +137,79 @@ const Landing = () => {
         </div>
       </header>
 
+
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-20 md:py-32">
-        <div className="max-w-4xl mx-auto text-center animate-fade-in">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            Modern Attendance Tracking
-            <span className="block bg-gradient-to-r from-education-primary to-education-secondary bg-clip-text text-transparent">
-              Made Simple
-            </span>
-          </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Transform how you manage classroom attendance with secure, time-sensitive codes
-            and real-time analytics. Perfect for teachers and educational institutions.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              size="lg"
-              onClick={() => navigate('/auth')}
-              className="bg-gradient-primary hover:bg-education-primary-dark transition-smooth text-lg px-8 py-6 shadow-large hover-scale"
-            >
-              Get Started Free
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            {!isMobileApp() && (
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => window.open('https://github.com/okelo0121/present-smart-code/releases/download/v1.0.0/app-release.apk', '_blank')}
-                className="text-lg px-8 py-6 hover-scale"
-              >
-                <Smartphone className="mr-2 h-5 w-5" />
-                Download App
-              </Button>
-            )}
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-              className="text-lg px-8 py-6 hover-scale"
-            >
-              Learn More
-            </Button>
+      <section className="container mx-auto px-4 py-12 md:py-24 overflow-hidden">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="text-center lg:text-left space-y-8 z-10">
+            <FadeInUp>
+              <h1 className="text-4xl md:text-6xl font-bold leading-tight">
+                Modern Attendance Tracking
+                <span className="block bg-gradient-to-r from-education-primary to-education-secondary bg-clip-text text-transparent">
+                  Made Simple
+                </span>
+              </h1>
+            </FadeInUp>
+            <FadeInUp delay={0.2}>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0">
+                Transform how you manage classroom attendance with secure, time-sensitive codes
+                and real-time analytics. Perfect for teachers and educational institutions.
+              </p>
+            </FadeInUp>
+
+            <FadeInUp delay={0.4}>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Button
+                  size="lg"
+                  onClick={() => navigate('/auth')}
+                  className="bg-gradient-primary hover:bg-education-primary-dark transition-smooth text-lg px-8 py-6 shadow-large hover-scale"
+                >
+                  Get Started Free
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+                {!isMobileApp() && (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => window.open('https://github.com/okelo0121/present-smart-code/releases/download/v1.0.0/app-release.apk', '_blank')}
+                    className="text-lg px-8 py-6 hover-scale"
+                  >
+                    <Smartphone className="mr-2 h-5 w-5" />
+                    Download App
+                  </Button>
+                )}
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="text-lg px-8 py-6 hover-scale"
+                >
+                  Learn More
+                </Button>
+              </div>
+            </FadeInUp>
+
+            {/* Stats */}
+            <FadeInUp delay={0.6}>
+              <div className="grid grid-cols-3 gap-6 pt-8 border-t border-border/50 max-w-xl mx-auto lg:mx-0">
+                <div className="p-2">
+                  <div className="text-2xl md:text-3xl font-bold text-education-primary">99.9%</div>
+                  <div className="text-sm text-muted-foreground mt-1">Uptime</div>
+                </div>
+                <div className="p-2">
+                  <div className="text-2xl md:text-3xl font-bold text-education-primary">&lt;2s</div>
+                  <div className="text-sm text-muted-foreground mt-1">Avg. Check-in</div>
+                </div>
+                <div className="p-2">
+                  <div className="text-2xl md:text-3xl font-bold text-education-primary">100%</div>
+                  <div className="text-sm text-muted-foreground mt-1">Secure</div>
+                </div>
+              </div>
+            </FadeInUp>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-6 mt-16 max-w-2xl mx-auto">
-            <div className="p-4">
-              <div className="text-3xl font-bold text-education-primary">99.9%</div>
-              <div className="text-sm text-muted-foreground mt-1">Uptime</div>
-            </div>
-            <div className="p-4">
-              <div className="text-3xl font-bold text-education-primary">&lt;2s</div>
-              <div className="text-sm text-muted-foreground mt-1">Avg. Check-in</div>
-            </div>
-            <div className="p-4">
-              <div className="text-3xl font-bold text-education-primary">100%</div>
-              <div className="text-sm text-muted-foreground mt-1">Secure</div>
-            </div>
+          <div className="relative animate-fade-in delay-200 lg:pl-8">
+            <HeroDemo />
           </div>
         </div>
       </section>
@@ -234,32 +217,66 @@ const Landing = () => {
       {/* Features Section */}
       <section id="features" className="container mx-auto px-4 py-20 bg-gradient-to-b from-transparent to-secondary/10">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">
-              Everything You Need
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Powerful features designed to make attendance tracking effortless and accurate
-            </p>
-          </div>
+          <FadeInUp>
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-5xl font-bold mb-4">
+                Everything You Need
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Powerful features designed to make attendance tracking effortless and accurate
+              </p>
+            </div>
+          </FadeInUp>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => (
-              <Card
-                key={index}
-                className="bg-gradient-card border-border/50 hover:shadow-large transition-smooth hover-scale group"
-              >
-                <CardContent className="p-6">
-                  <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-smooth">
-                    <feature.icon className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
-                </CardContent>
-              </Card>
-            ))}
+          <FadeInUp delay={0.2}>
+            <FeatureSpotlights />
+          </FadeInUp>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+            {features
+              .filter(f => f.title !== "Real-Time Tracking" && f.title !== "Attendance Analytics")
+              .map((feature, index) => (
+                <FadeInUp key={index} delay={0.1 * index}>
+                  <Card
+                    className="bg-gradient-card border-border/50 hover:shadow-large transition-smooth hover-scale group"
+                  >
+                    <CardContent className="p-6">
+                      <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-smooth">
+                        <feature.icon className="w-6 h-6 text-white" />
+                      </div>
+                      <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                      <p className="text-muted-foreground text-sm">{feature.description}</p>
+                    </CardContent>
+                  </Card>
+                </FadeInUp>
+              ))}
           </div>
         </div>
+      </section>
+
+      {/* Security Features Section */}
+      <section className="container mx-auto px-4 py-20">
+        <FadeInUp>
+          <SecurityFeatures />
+        </FadeInUp>
+      </section>
+
+      {/* ROI Calculator Section */}
+      <section className="container mx-auto px-4 py-20 bg-secondary/5">
+        <FadeInUp>
+          <ROICalculator />
+        </FadeInUp>
+      </section>
+
+      {/* Integrations Section */}
+      <section className="border-y border-border/50 bg-secondary/5">
+        <IntegrationsSection />
+      </section>
+
+      {/* Testimonials Section */}
+      {/* Testimonials Section */}
+      <section>
+        <Testimonials />
       </section>
 
       {/* How It Works */}
@@ -297,78 +314,18 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="max-w-4xl mx-auto">
-          <Card className="bg-gradient-hero border-0 text-white overflow-hidden relative">
-            <div className="absolute inset-0 bg-grid-white/10"></div>
-            <CardContent className="p-12 md:p-16 text-center relative z-10">
-              <h2 className="text-3xl md:text-5xl font-bold mb-6">
-                Ready to Simplify Attendance?
-              </h2>
-              <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-                Join hundreds of educators who trust EduTrack for accurate,
-                hassle-free attendance management.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button
-                  size="lg"
-                  onClick={() => navigate('/auth')}
-                  variant="secondary"
-                  className="text-lg px-8 py-6 hover-scale shadow-large"
-                >
-                  <Mail className="mr-2 h-5 w-5" />
-                  Get Started Now
-                </Button>
-              </div>
+      {/* FAQ Section */}
+      <section className="container mx-auto px-4 py-20 bg-background">
+        <FAQSection />
+      </section>
 
-              {/* Newsletter Subscription */}
-              <div className="mt-12 max-w-md mx-auto">
-                <p className="text-white/80 mb-4 text-sm">Or subscribe to our newsletter for updates</p>
-                <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-2">
-                  <Input
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-offset-0 focus-visible:ring-white/30"
-                    required
-                  />
-                  <Button
-                    type="submit"
-                    variant="secondary"
-                    disabled={isSubscribing}
-                    className="whitespace-nowrap"
-                  >
-                    {isSubscribing ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      "Subscribe"
-                    )}
-                  </Button>
-                </form>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {/* CTA Section */}
+      <section>
+        <FinalCTA />
       </section>
 
       {/* Footer */}
-      <footer className="border-t bg-card/50 backdrop-blur-sm mt-20">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-lg font-semibold">EduTrack</span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              © 2025 EduTrack. Simplifying attendance tracking for modern classrooms.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
       <NewsletterPopup
         isOpen={showNewsletter}
         onClose={() => setShowNewsletter(false)}
