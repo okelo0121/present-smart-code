@@ -9,7 +9,7 @@ import { getAuthToken } from "@/hooks/useAuth";
 import { z } from "zod";
 
 // Normalize API base so it always points to the backend API root (including /api)
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const API_URL = BASE_URL.endsWith('/api') ? BASE_URL : `${BASE_URL.replace(/\/$/, '')}/api`;
 
 const inviteSchema = z.object({

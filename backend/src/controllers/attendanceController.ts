@@ -11,13 +11,14 @@ function generateCode(): string {
 
 export async function generateAttendanceCode(req: AuthRequest, res: Response): Promise<void> {
   try {
-    console.log('[generateCode] Request from user:', req.userId);
-    
+    const { geoFence } = req.body; // Expecting geoFence: { latitude, longitude, radius }
+    if (geoFence) {
+      console.log('[generateCode] with GeoFence:', JSON.stringify(geoFence));
+    }
+
     const teacher = await Teacher.findOne({ userId: req.userId });
-    console.log('[generateCode] Teacher lookup result:', teacher ? `Found: ${teacher._id}` : 'Not found');
-    
+
     if (!teacher) {
-      console.warn('[generateCode] Teacher profile not found for userId:', req.userId);
       res.status(404).json({ error: 'Teacher profile not found' });
       return;
     }
@@ -30,26 +31,44 @@ export async function generateAttendanceCode(req: AuthRequest, res: Response): P
       code,
       teacherId: teacher._id,
       class: teacher.department,
-      expiresAt
+      expiresAt,
+      geoFence // Optional
     });
 
     await attendanceCode.save();
-    console.log('[generateCode] Code created successfully:', code);
 
     res.status(201).json({
       code,
       expiresAt,
       expiresIn: 120 // seconds
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[generateCode] Error:', error);
-    res.status(500).json({ error: 'Failed to generate attendance code' });
+    res.status(500).json({ error: error.message || 'Failed to generate attendance code' });
   }
+}
+
+// Haversine formula to calculate distance in meters
+function getDistanceFromLatLonInMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371e3; // Radius of the earth in meters
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in meters
+  return d;
+}
+
+function deg2rad(deg: number) {
+  return deg * (Math.PI / 180);
 }
 
 export async function submitAttendance(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const { code } = req.body;
+    const { code, location } = req.body;
 
     if (!code) {
       res.status(400).json({ error: 'Code is required' });
@@ -67,6 +86,33 @@ export async function submitAttendance(req: AuthRequest, res: Response): Promise
     if (attendanceCode.expiresAt < new Date()) {
       res.status(400).json({ error: 'Code has expired' });
       return;
+    }
+
+    // Geo-Fencing Validation
+    if (attendanceCode.geoFence && attendanceCode.geoFence.latitude && attendanceCode.geoFence.longitude) {
+      if (!location || !location.lat || !location.lng) {
+        res.status(403).json({ error: 'Location permission required for this session' });
+        return;
+      }
+
+      const distance = getDistanceFromLatLonInMeters(
+        attendanceCode.geoFence.latitude,
+        attendanceCode.geoFence.longitude,
+        location.lat,
+        location.lng
+      );
+
+      const maxRadius = attendanceCode.geoFence.radius || 100;
+
+      console.log(`[GeoFence] Student dist: ${distance}m, Max: ${maxRadius}m`);
+
+      if (distance > maxRadius) {
+        res.status(403).json({
+          error: 'You are too far from the classroom to mark attendance',
+          details: `Distance: ${Math.round(distance)}m`
+        });
+        return;
+      }
     }
 
     // Find the student
@@ -192,5 +238,41 @@ export async function getAttendanceStats(req: AuthRequest, res: Response): Promi
   } catch (error) {
     console.error('Get attendance stats error:', error);
     res.status(500).json({ error: 'Failed to get attendance statistics' });
+  }
+}
+
+export async function getTodayAttendance(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const teacher = await Teacher.findOne({ userId: req.userId });
+    if (!teacher) {
+      res.status(404).json({ error: 'Teacher profile not found' });
+      return;
+    }
+
+    // Get attendance codes for this teacher created today (since midnight)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const codes = await AttendanceCode.find({
+      teacherId: teacher._id,
+      createdAt: { $gte: today }
+    });
+
+    const codeIds = codes.map(c => c._id);
+
+    // Get attendance records for these codes
+    // We also need to check submittedAt just in case, but code creation is a good proxy for "today's session"
+    const records = await AttendanceRecord.find({
+      codeId: { $in: codeIds }
+    });
+
+    const presentStudentIds = records.map(r => r.studentId);
+
+    res.json({
+      presentStudentIds
+    });
+  } catch (error) {
+    console.error('Get today attendance error:', error);
+    res.status(500).json({ error: 'Failed to get today\'s attendance' });
   }
 }

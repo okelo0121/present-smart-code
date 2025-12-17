@@ -4,6 +4,11 @@ export interface IAttendanceCode extends Document {
   code: string;
   teacherId: Types.ObjectId;
   class: string;
+  geoFence?: {
+    latitude: number;
+    longitude: number;
+    radius: number; // in meters
+  };
   expiresAt: Date;
   createdAt: Date;
 }
@@ -23,6 +28,11 @@ const attendanceCodeSchema = new Schema<IAttendanceCode>({
   class: {
     type: String,
     required: true
+  },
+  geoFence: {
+    latitude: Number,
+    longitude: Number,
+    radius: Number
   },
   expiresAt: {
     type: Date,

@@ -7,6 +7,7 @@ export interface IStudent extends Document {
   email: string;
   department?: string;
   class?: string;
+  gender?: 'male' | 'female' | 'other';
   externalId?: string;
   phone?: string;
   createdAt: Date;
@@ -31,6 +32,7 @@ const studentSchema = new Schema<IStudent>({
   email: {
     type: String,
     required: true,
+    unique: true,
     lowercase: true,
     trim: true
   },
@@ -41,6 +43,11 @@ const studentSchema = new Schema<IStudent>({
   class: {
     type: String,
     default: null
+  },
+  gender: {
+    type: String,
+    enum: ['male', 'female', 'other'],
+    default: 'other' // Made optional/default to avoid breaking existing inserts if strict
   },
   externalId: {
     type: String,

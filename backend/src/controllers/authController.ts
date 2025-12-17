@@ -66,17 +66,38 @@ export async function signup(req: Request, res: Response): Promise<void> {
         }
       }
 
-      const student = new Student({
-        userId: user._id,
-        email: user.email,
-        name,
-        phone: phone || null,
-        department: department || null,
-        class: studentClass || null,
-        externalId: externalId || null,
-        teacherId: teacherId // Link to teacher
-      });
-      await student.save();
+      // Check if student profile already exists (e.g. created via invite)
+      let student = await Student.findOne({ email: email.toLowerCase() });
+
+      if (student) {
+        // Link to existing profile
+        student.userId = user._id as any;
+        student.name = name; // Update name to match usage
+        if (phone) student.phone = phone;
+        if (externalId) student.externalId = externalId;
+
+        // Update class/dept if provided and currently null, or if coming from specific invite
+        if (department) student.department = department;
+        if (studentClass) student.class = studentClass;
+        if (teacherId) student.teacherId = teacherId as any;
+
+        await student.save();
+        console.log(`[Signup] Linked user ${user._id} to existing student profile ${student._id}`);
+      } else {
+        // Create new profile
+        student = new Student({
+          userId: user._id,
+          email: user.email,
+          name,
+          phone: phone || null,
+          department: department || null,
+          class: studentClass || null,
+          externalId: externalId || null,
+          teacherId: teacherId // Link to teacher
+        });
+        await student.save();
+        console.log(`[Signup] Created new student profile ${student._id}`);
+      }
     }
 
     // Send welcome email

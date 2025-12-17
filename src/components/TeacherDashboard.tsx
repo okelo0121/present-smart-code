@@ -15,7 +15,7 @@ import { RecentAttendance } from "./dashboard/RecentAttendance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const API_URL = `${BASE_URL.replace(/\/$/, '')}/api`;
 
 interface TeacherDashboardProps {
@@ -35,14 +35,91 @@ export const TeacherDashboard = ({ activeView, onViewChange }: TeacherDashboardP
   const [attendanceData, setAttendanceData] = useState<AttendanceStats[]>([]);
   const [studentsByClass, setStudentsByClass] = useState<Record<string, number>>({});
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
+  const [presentStudentIds, setPresentStudentIds] = useState<string[]>([]);
+  const [attendanceFilter, setAttendanceFilter] = useState<'present' | 'absent' | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
-  console.log('[TeacherDashboard] State - currentCode:', currentCode, 'teacherData:', !!teacherData);
-
   const attendanceRate = totalStudents > 0 ? Math.round((studentsPresent / totalStudents) * 100) : 0;
 
-  // Fetch teacher data and students
+  // Helper: Format Time
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // Helper: Fetch Present Students
+  const fetchPresentStudents = async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/attendance/today`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPresentStudentIds(data.presentStudentIds || []);
+      }
+    } catch (error) {
+      console.error('Error fetching present students:', error);
+    }
+  };
+
+  // Helper: Generate Code
+  const generateCode = async (geoFence?: { latitude: number; longitude: number; radius: number }) => {
+    if (!teacherData) {
+      console.warn('[generateCode] Teacher data not loaded yet');
+      return;
+    }
+
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        console.warn('[generateCode] No auth token found');
+        return;
+      }
+
+      console.log('[generateCode] Requesting code with geoFence:', geoFence);
+
+      const response = await fetch(`${API_URL}/attendance/generate-code`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ geoFence }) // Send geoFence if provided
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate code');
+      }
+
+      const data = await response.json();
+      setCurrentCode(data.code);
+      setTimeLeft(data.expiresIn);
+      setStudentsPresent(0);
+      // Reset filter when generating new code
+      setPresentStudentIds([]);
+
+      toast({
+        title: "Code Generated!",
+        description: `New attendance code: ${data.code}`,
+      });
+    } catch (error: any) {
+      console.error('[generateCode] Exception:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate code",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Effect: Fetch Teacher Data & Students (Initial Load)
   useEffect(() => {
     const fetchTeacherData = async () => {
       if (!user) return;
@@ -86,6 +163,11 @@ export const TeacherDashboard = ({ activeView, onViewChange }: TeacherDashboardP
         if (!statsRes.ok) throw new Error('Failed to fetch attendance stats');
         const stats = await statsRes.json();
         setAttendanceData(stats.stats || []);
+
+        // Initial population of studentsPresent
+        if (stats.stats && stats.stats.length > 0) {
+          setStudentsPresent(stats.stats[0].present);
+        }
       } catch (error) {
         console.error('Error fetching teacher data:', error);
       }
@@ -94,51 +176,7 @@ export const TeacherDashboard = ({ activeView, onViewChange }: TeacherDashboardP
     fetchTeacherData();
   }, [user]);
 
-  const generateCode = async () => {
-    if (!teacherData) {
-      console.warn('[generateCode] Teacher data not loaded yet');
-      return;
-    }
-
-    try {
-      const token = getAuthToken();
-      if (!token) {
-        console.warn('[generateCode] No auth token found');
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/attendance/generate-code`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate code');
-      }
-
-      const data = await response.json();
-      setCurrentCode(data.code);
-      setTimeLeft(data.expiresIn);
-      setStudentsPresent(0);
-
-      toast({
-        title: "Code Generated!",
-        description: `New attendance code: ${data.code}`,
-      });
-    } catch (error: any) {
-      console.error('[generateCode] Exception:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to generate code",
-        variant: "destructive",
-      });
-    }
-  };
-
+  // Effect: Timer for Code Expiry
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (timeLeft > 0) {
@@ -160,9 +198,9 @@ export const TeacherDashboard = ({ activeView, onViewChange }: TeacherDashboardP
     return () => clearInterval(interval);
   }, [timeLeft, toast]);
 
-  // Listen to real-time attendance submissions
+  // Effect: Real-time Polling (Attendance Stats + Present Students)
   useEffect(() => {
-    if (!currentCode || !teacherData) return;
+    if (!teacherData) return;
 
     const fetchCurrentAttendance = async () => {
       try {
@@ -179,26 +217,29 @@ export const TeacherDashboard = ({ activeView, onViewChange }: TeacherDashboardP
         if (data.stats && data.stats.length > 0) {
           const todayStats = data.stats[0];
           setStudentsPresent(todayStats.present);
+          // Sync table data too
+          setAttendanceData(data.stats);
         }
       } catch (error) {
         console.error('Error fetching attendance:', error);
       }
     };
 
-    // Fetch immediately
-    fetchCurrentAttendance();
-
     // Poll for updates every 2 seconds
-    const interval = setInterval(fetchCurrentAttendance, 2000);
+    const interval = setInterval(() => {
+      fetchCurrentAttendance();
+      fetchPresentStudents();
+    }, 2000);
+
+    // Initial fetch
+    fetchCurrentAttendance();
+    fetchPresentStudents();
 
     return () => clearInterval(interval);
-  }, [currentCode, teacherData]);
+  }, [teacherData]);
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
+
+  // --- Views ---
 
   if (activeView === 'invite-students') {
     return (
@@ -286,20 +327,43 @@ export const TeacherDashboard = ({ activeView, onViewChange }: TeacherDashboardP
   }
 
   if (activeView === 'students') {
+    let filteredStudents = students;
+
+    // Apply class filter if selected
+    if (selectedClass) {
+      filteredStudents = filteredStudents.filter(s => (s.class || 'Unassigned') === selectedClass);
+    }
+
+    // Apply attendance filter if active
+    if (attendanceFilter === 'present') {
+      filteredStudents = filteredStudents.filter(s => presentStudentIds.includes(s._id));
+    } else if (attendanceFilter === 'absent') {
+      filteredStudents = filteredStudents.filter(s => !presentStudentIds.includes(s._id));
+    }
+
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-foreground">
-            {selectedClass ? `${selectedClass} Students` : 'My Students'}
+            {attendanceFilter
+              ? (attendanceFilter === 'present' ? 'Present Students' : 'Absent Students')
+              : (selectedClass ? `${selectedClass} Students` : 'My Students')}
           </h2>
           <div className="flex items-center gap-2">
-            {selectedClass && (
+            {(selectedClass || attendanceFilter) && (
               <>
-                <Button variant="outline" size="sm" onClick={() => onViewChange?.('dashboard')} className="gap-2">
+                <Button variant="outline" size="sm" onClick={() => {
+                  onViewChange?.('dashboard');
+                  setAttendanceFilter(null);
+                  setSelectedClass(null);
+                }} className="gap-2">
                   <ArrowLeft className="w-4 h-4" />
                   Back to Dashboard
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedClass(null)}>
+                <Button variant="ghost" size="sm" onClick={() => {
+                  setAttendanceFilter(null);
+                  setSelectedClass(null);
+                }}>
                   Clear Filter
                 </Button>
               </>
@@ -310,12 +374,7 @@ export const TeacherDashboard = ({ activeView, onViewChange }: TeacherDashboardP
           </div>
         </div>
 
-        <StudentList
-          students={selectedClass
-            ? students.filter(s => (s.class || 'Unassigned') === selectedClass)
-            : students
-          }
-        />
+        <StudentList students={filteredStudents} />
       </div>
     );
   }
@@ -358,6 +417,15 @@ export const TeacherDashboard = ({ activeView, onViewChange }: TeacherDashboardP
         totalStudents={totalStudents}
         studentsPresent={studentsPresent}
         attendanceRate={attendanceRate}
+        hasActivity={studentsPresent > 0}
+        onPresentClick={() => {
+          setAttendanceFilter('present');
+          onViewChange?.('students');
+        }}
+        onAbsentClick={() => {
+          setAttendanceFilter('absent');
+          onViewChange?.('students');
+        }}
       />
 
       <StudentsByClass

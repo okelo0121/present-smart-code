@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  BookOpen, 
-  CheckCircle, 
-  XCircle, 
+import {
+  BookOpen,
+  CheckCircle,
+  XCircle,
   Calendar,
   TrendingUp,
   Clock,
@@ -16,7 +16,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, getAuthToken } from "@/hooks/useAuth";
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const API_URL = `${BASE_URL.replace(/\/$/, '')}/api`;
 
 interface StudentInterfaceProps {
@@ -60,7 +60,7 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
         const records = await attendanceRes.json();
 
         const today = new Date().toISOString().split('T')[0];
-        const todayRecord = records.find((r: any) => 
+        const todayRecord = records.find((r: any) =>
           new Date(r.submittedAt).toISOString().split('T')[0] === today
         );
 
@@ -94,59 +94,91 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
 
     setIsSubmitting(true);
 
-    try {
-      const token = getAuthToken();
-      if (!token) {
+    // Function to perform the actual API call
+    const submitToApi = async (location?: { lat: number; lng: number }) => {
+      try {
+        const token = getAuthToken();
+        if (!token) {
+          toast({
+            title: "Authentication Error",
+            description: "Please sign in again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const response = await fetch(`${API_URL}/attendance/submit`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            code: enteredCode.toUpperCase(),
+            location
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          // Determine specific error message
+          let errorMsg = data.error || 'Failed to submit attendance';
+          if (response.status === 403 && errorMsg.includes('Location')) {
+            errorMsg = "This class requires you to be in the classroom (Geo-Fencing enabled).";
+          }
+          throw new Error(errorMsg);
+        }
+
+        if (data.success) {
+          setTodayMarked(true);
+          toast({
+            title: "Attendance Marked!",
+            description: "You've been marked present for today's class.",
+          });
+          setEnteredCode("");
+
+          // Refresh attendance history
+          const historyRes = await fetch(`${API_URL}/attendance/history`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+
+          if (historyRes.ok) {
+            const records = await historyRes.json();
+            setAttendanceHistory(records);
+          }
+        }
+      } catch (error: any) {
+        console.error('Error submitting attendance:', error);
         toast({
-          title: "Authentication Error",
-          description: "Please sign in again.",
+          title: "Submission Failed",
+          description: error.message || "The code is invalid or has expired. Please try again.",
           variant: "destructive",
         });
-        return;
+      } finally {
+        setIsSubmitting(false);
       }
+    };
 
-      const response = await fetch(`${API_URL}/attendance/submit`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+    // Try to get location first, regardless of whether it's required (backend validates if needed)
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          submitToApi({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
         },
-        body: JSON.stringify({ code: enteredCode.toUpperCase() })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to submit attendance');
-      }
-
-      if (data.success) {
-        setTodayMarked(true);
-        toast({
-          title: "Attendance Marked!",
-          description: "You've been marked present for today's class.",
-        });
-        setEnteredCode("");
-
-        // Refresh attendance history
-        const historyRes = await fetch(`${API_URL}/attendance/history`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (historyRes.ok) {
-          const records = await historyRes.json();
-          setAttendanceHistory(records);
-        }
-      }
-    } catch (error: any) {
-      console.error('Error submitting attendance:', error);
-      toast({
-        title: "Submission Failed",
-        description: error.message || "The code is invalid or has expired. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+        (error) => {
+          console.warn("Location access denied or failed:", error);
+          // Try submitting without location - backend will reject if it was required
+          submitToApi();
+        },
+        { timeout: 5000, enableHighAccuracy: true }
+      );
+    } else {
+      // Fallback for browsers without geolocation
+      submitToApi();
     }
   };
 
@@ -231,9 +263,9 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
                       Get the code from your teacher
                     </p>
                   </div>
-                  
-                  <Button 
-                    type="submit" 
+
+                  <Button
+                    type="submit"
                     className="w-full bg-gradient-primary hover:bg-education-primary-dark transition-smooth"
                     disabled={isSubmitting || enteredCode.length !== 6}
                   >
@@ -263,24 +295,24 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Student Name</span>
-                    <span className="font-medium">{studentInfo.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Department</span>
-                    <span className="font-medium">{studentInfo.department}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Class</span>
-                    <span className="font-medium">{studentInfo.class}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Date</span>
-                    <span className="font-medium">{new Date().toLocaleDateString()}</span>
-                  </div>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Student Name</span>
+                  <span className="font-medium">{studentInfo.name}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Department</span>
+                  <span className="font-medium">{studentInfo.department}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Class</span>
+                  <span className="font-medium">{studentInfo.class}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Date</span>
+                  <span className="font-medium">{new Date().toLocaleDateString()}</span>
+                </div>
+              </div>
 
               <div className="pt-4 border-t border-border">
                 <div className="flex items-center space-x-2">
@@ -391,9 +423,9 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>{presentDays} of {totalDays} classes attended</span>
             <span>
-              {attendancePercentage >= 90 ? "Excellent!" : 
-               attendancePercentage >= 80 ? "Good attendance" : 
-               "Needs improvement"}
+              {attendancePercentage >= 90 ? "Excellent!" :
+                attendancePercentage >= 80 ? "Good attendance" :
+                  "Needs improvement"}
             </span>
           </div>
         </CardContent>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { FadeInUp } from "@/components/FadeInUp";
 import { footerContent } from "@/data/footerContent";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 
 export function Footer() {
     const currentYear = new Date().getFullYear();
@@ -136,6 +136,14 @@ export function Footer() {
             {/* Content Modal */}
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col p-0 bg-background/95 backdrop-blur-xl border-white/10">
+                    <DialogHeader className="sr-only">
+                        <DialogTitle>
+                            {selectedContent ? selectedContent.charAt(0).toUpperCase() + selectedContent.slice(1) : 'Content'}
+                        </DialogTitle>
+                        <DialogDescription>
+                            Legal or informational content about {selectedContent}
+                        </DialogDescription>
+                    </DialogHeader>
                     <ScrollArea className="flex-1 p-6 md:p-8">
                         {selectedContent && (
                             <div

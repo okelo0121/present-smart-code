@@ -5,9 +5,19 @@ interface TeacherStatsProps {
     totalStudents: number;
     studentsPresent: number;
     attendanceRate: number;
+    hasActivity?: boolean;
+    onPresentClick?: () => void;
+    onAbsentClick?: () => void;
 }
 
-export const TeacherStats = ({ totalStudents, studentsPresent, attendanceRate }: TeacherStatsProps) => {
+export const TeacherStats = ({
+    totalStudents,
+    studentsPresent,
+    attendanceRate,
+    hasActivity = false,
+    onPresentClick,
+    onAbsentClick
+}: TeacherStatsProps) => {
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card className="bg-gradient-card">
@@ -24,7 +34,10 @@ export const TeacherStats = ({ totalStudents, studentsPresent, attendanceRate }:
                 </CardContent>
             </Card>
 
-            <Card className="bg-gradient-card">
+            <Card
+                className={`bg-gradient-card ${onPresentClick ? 'cursor-pointer hover:border-education-success/50 transition-colors' : ''}`}
+                onClick={onPresentClick}
+            >
                 <CardContent className="p-6">
                     <div className="flex items-center space-x-4">
                         <div className="p-2 bg-education-success/10 rounded-lg">
@@ -38,7 +51,10 @@ export const TeacherStats = ({ totalStudents, studentsPresent, attendanceRate }:
                 </CardContent>
             </Card>
 
-            <Card className="bg-gradient-card">
+            <Card
+                className={`bg-gradient-card ${onAbsentClick ? 'cursor-pointer hover:border-destructive/50 transition-colors' : ''}`}
+                onClick={onAbsentClick}
+            >
                 <CardContent className="p-6">
                     <div className="flex items-center space-x-4">
                         <div className="p-2 bg-destructive/10 rounded-lg">
@@ -46,7 +62,7 @@ export const TeacherStats = ({ totalStudents, studentsPresent, attendanceRate }:
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">Absent Today</p>
-                            <p className="text-2xl font-bold">{totalStudents - studentsPresent}</p>
+                            <p className="text-2xl font-bold">{hasActivity ? totalStudents - studentsPresent : 0}</p>
                         </div>
                     </div>
                 </CardContent>
