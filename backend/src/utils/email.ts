@@ -1,12 +1,20 @@
 import { Resend } from 'resend';
 
-// Initialize Resend with API key
-if (!process.env.RESEND_API_KEY) {
-  console.warn('[WARNING] RESEND_API_KEY not found. Email sending will be disabled.');
-  console.warn('Set RESEND_API_KEY in backend/.env to enable email features.');
+
+
+let resendInstance: Resend | null = null;
+
+function getResend(): Resend | null {
+  if (!resendInstance && process.env.RESEND_API_KEY) {
+    resendInstance = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resendInstance;
 }
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+// Check configuration on first import (optional, but keep for logging)
+if (!process.env.RESEND_API_KEY) {
+  // This might fire early due to hoisting, but strict check is done in getResend()
+}
 
 export async function sendInviteEmail(
   studentEmail: string,
@@ -15,6 +23,7 @@ export async function sendInviteEmail(
   inviteToken: string,
   frontendUrl: string
 ): Promise<void> {
+  const resend = getResend();
   if (!resend) {
     console.log('[EMAIL] Dev mode - Would send invite to:', studentEmail);
     return;
@@ -62,6 +71,7 @@ export async function sendInviteEmail(
   `;
 
   try {
+    const resend = getResend();
     if (!resend) {
       console.log('[EMAIL] Dev mode - Would send invite to:', studentEmail);
       return;
@@ -115,6 +125,7 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<voi
   `;
 
   try {
+    const resend = getResend();
     if (!resend) {
       console.log('[EMAIL] Dev mode - Would send email to:', email);
       return;
@@ -178,6 +189,7 @@ export async function sendPasswordResetEmail(
   `;
 
   try {
+    const resend = getResend();
     if (!resend) {
       console.log('[EMAIL] Dev mode - Would send password reset email to:', email);
       console.log('[EMAIL] Reset link:', resetLink);
@@ -194,5 +206,62 @@ export async function sendPasswordResetEmail(
   } catch (error) {
     console.error('Error sending password reset email:', error);
     throw new Error('Failed to send password reset email');
+  }
+}
+
+export async function sendLessonNotificationEmail(
+  studentEmail: string,
+  studentName: string,
+  teacherName: string,
+  className: string,
+  topic: string,
+  description: string
+): Promise<void> {
+
+  const emailContent = `
+    <html>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #4f46e5;">New Lesson Posted 📚</h1>
+
+          <p>Hi ${studentName},</p>
+
+          <p><strong>${teacherName}</strong> has posted a new lesson for <strong>${className}</strong>.</p>
+
+          <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0 0 10px 0; font-size: 18px; color: #111;"><strong>${topic}</strong></p>
+            <p style="margin: 0; color: #555;">${description}</p>
+          </div>
+
+          <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
+            Log in to EduTrack to view full details and any attached materials.
+          </p>
+
+          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 12px; margin: 0;">
+              Present Smart - Attendance Made Simple
+            </p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  try {
+    const resend = getResend();
+    if (!resend) {
+      console.log('[EMAIL] Dev mode - Would send lesson notification to:', studentEmail);
+      return;
+    }
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'notifications@edutrack.store';
+    await resend.emails.send({
+      from: fromEmail,
+      to: studentEmail,
+      subject: `New Lesson: ${topic} (${className})`,
+      html: emailContent,
+    });
+  } catch (error) {
+    console.error('Error sending lesson notification email:', error);
+    // Don't throw, just log error so other emails can still try to succeed
   }
 }

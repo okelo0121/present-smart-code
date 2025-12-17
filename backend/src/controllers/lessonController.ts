@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { Lesson } from '../models/Lesson';
 import { Student } from '../models/Student';
-import { notificationService } from '../services/notificationService';
+import { sendLessonNotificationEmail } from '../utils/email';
 import { Teacher } from '../models/Teacher';
 
 export async function createLesson(req: AuthRequest, res: Response): Promise<void> {
@@ -40,22 +40,25 @@ export async function createLesson(req: AuthRequest, res: Response): Promise<voi
         // 2. Find students in this class
         const students = await Student.find({ class: className });
 
-        // 3. Send SMS to each student
-        const smsMessage = `New Lesson Posted: ${topic}\n${description.substring(0, 50)}...`;
-
-        // In a real app, we'd use a queue for this. For MVP, we'll do it async but not block response too much.
+        // 3. Send Email to each student
         // We'll fire and forget the notifications to ensure fast response time.
         students.forEach(async (student) => {
-            const phone = student.phone;
-            if (phone) {
-                await notificationService.sendSMS(phone, smsMessage);
+            if (student.email) {
+                await sendLessonNotificationEmail(
+                    student.email,
+                    student.name,
+                    teacher.name,
+                    className,
+                    topic,
+                    description
+                );
             } else {
-                console.log(`[Lesson] Skipping SMS for student ${student.name} (no phone number)`);
+                console.log(`[Lesson] Skipping email for student ${student.name} (no email)`);
             }
         });
 
         res.status(201).json({
-            message: 'Lesson created and notifications queued',
+            message: 'Lesson created and email notifications queued',
             lesson,
             recipientCount: students.length
         });

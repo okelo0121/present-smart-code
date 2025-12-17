@@ -102,7 +102,7 @@ export const PostLesson = ({ department, studentsByClass }: PostLessonProps) => 
 
                         <Button type="submit" className="w-full bg-gradient-primary" disabled={isSubmitting}>
                             <Mail className="w-4 h-4 mr-2" />
-                            {isSubmitting ? "Posting..." : "Post & Send SMS"}
+                            {isSubmitting ? "Posting..." : "Post & Notify"}
                         </Button>
                     </form>
                 </CardContent>
