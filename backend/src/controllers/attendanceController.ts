@@ -188,7 +188,7 @@ export async function getAttendanceStats(req: AuthRequest, res: Response): Promi
     }
 
     const students = await Student.find({ teacherId: teacher._id });
-    const studentIds = students.map(s => s._id);
+    const studentIds = students.map((s: any) => s._id);
 
     // Get attendance codes for this teacher (last 7 days)
     const sevenDaysAgo = new Date();
@@ -199,7 +199,7 @@ export async function getAttendanceStats(req: AuthRequest, res: Response): Promi
       createdAt: { $gte: sevenDaysAgo }
     });
 
-    const codeIds = codes.map(c => c._id);
+    const codeIds = codes.map((c: any) => c._id);
 
     // Get attendance records for these students in the last 7 days
     const records = await AttendanceRecord.find({
@@ -251,7 +251,7 @@ export async function getTodayAttendance(req: AuthRequest, res: Response): Promi
 
     // Get all students for this teacher to filter attendance
     const students = await Student.find({ teacherId: teacher._id });
-    const studentIds = students.map(s => s._id);
+    const studentIds = students.map((s: any) => s._id);
 
     // Get attendance codes for this teacher created today (since midnight)
     const today = new Date();
@@ -347,7 +347,7 @@ export async function getAnalytics(req: AuthRequest, res: Response): Promise<voi
     }
 
     const students = await Student.find({ teacherId: teacher._id });
-    const studentIds = students.map(s => s._id);
+    const studentIds = students.map((s: any) => s._id);
     const totalStudents = students.length;
 
     // 1. Weekly Trends (Last 7 Days)
@@ -402,7 +402,7 @@ export async function getAnalytics(req: AuthRequest, res: Response): Promise<voi
     // Let's do daily average over last 30 days to be more robust
     // For now, let's stick to "Total Attendance Count" per class for simplicity in this iteration
     allRecords.forEach(record => {
-      const student = students.find(s => s._id.toString() === record.studentId.toString());
+      const student = students.find((s: any) => s._id.toString() === record.studentId.toString());
       if (student) {
         const className = student.class || 'Unassigned';
         if (classStats[className]) {
@@ -438,7 +438,7 @@ export async function getAnalytics(req: AuthRequest, res: Response): Promise<voi
     });
 
     const lowAttendanceStudents = students
-      .map(s => {
+      .map((s: any) => {
         const count = studentAttendanceCounts[s._id.toString()] || 0;
         const percentage = maxAttendance > 0 ? (count / maxAttendance) * 100 : 0; // Relative to max
         return {
