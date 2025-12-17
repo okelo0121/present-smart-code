@@ -26,7 +26,8 @@ interface StudentInterfaceProps {
 export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
   const [enteredCode, setEnteredCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [todayMarked, setTodayMarked] = useState(false);
+  const [todayMarked, setTodayMarked] = useState(false); // Used for "Today's Status" card only
+  const [showSuccess, setShowSuccess] = useState(false); // Used for Form feedback
   const [studentInfo, setStudentInfo] = useState<any>(null);
   const [attendanceHistory, setAttendanceHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +65,7 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
           new Date(r.submittedAt).toISOString().split('T')[0] === today
         );
 
-        setTodayMarked(!!todayRecord);
+        setTodayMarked(!!todayRecord); // Keep this for status card
         setAttendanceHistory(records || []);
       } catch (error: any) {
         console.error('Error fetching student data:', error);
@@ -131,7 +132,8 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
         }
 
         if (data.success) {
-          setTodayMarked(true);
+          setTodayMarked(true); // Update status card
+          setShowSuccess(true); // Show success view
           toast({
             title: "Attendance Marked!",
             description: "You've been marked present for today's class.",
@@ -219,7 +221,7 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-foreground">Mark Attendance</h2>
           <Badge variant="outline" className="text-education-info border-education-info">
-            {studentInfo?.department || 'Student'}
+            {studentInfo?.department || studentInfo?.class || 'Student'}
           </Badge>
         </div>
 
@@ -233,7 +235,7 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {todayMarked ? (
+              {showSuccess ? (
                 <div className="text-center space-y-4">
                   <div className="w-16 h-16 mx-auto bg-education-success/10 rounded-full flex items-center justify-center">
                     <CheckCircle className="w-8 h-8 text-education-success" />
@@ -245,6 +247,13 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
                   <Badge className="bg-education-success">
                     Present - {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </Badge>
+                  <Button
+                    variant="outline"
+                    className="w-full mt-4"
+                    onClick={() => setShowSuccess(false)}
+                  >
+                    Enter Another Code
+                  </Button>
                 </div>
               ) : (
                 <form onSubmit={handleCodeSubmit} className="space-y-4">
@@ -302,11 +311,11 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Department</span>
-                  <span className="font-medium">{studentInfo.department}</span>
+                  <span className="font-medium">{(studentInfo.department || '').trim() || 'Not Assigned'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Class</span>
-                  <span className="font-medium">{studentInfo.class}</span>
+                  <span className="font-medium">{(studentInfo.class || '').trim() || 'Not Assigned'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Date</span>

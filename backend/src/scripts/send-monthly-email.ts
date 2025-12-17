@@ -2,6 +2,7 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { Resend } from 'resend';
+// Import User FIRST to ensure schema is registered before Teacher uses it in populate
 import { User } from '../models/User';
 import { Teacher } from '../models/Teacher';
 import { Student } from '../models/Student';
@@ -50,7 +51,8 @@ async function sendMonthlyEmails() {
 
         console.log(`Generating reports for: ${startOfMonth.toDateString()} to ${endOfMonth.toDateString()}`);
 
-        const teachers = await Teacher.find().populate('userId');
+        const allTeachers = await Teacher.find().populate({ path: 'userId', model: User });
+        const teachers = allTeachers.filter(t => (t.userId as any)?.userType === 'teacher');
 
         for (const teacher of teachers) {
             // Find codes created in the previous month

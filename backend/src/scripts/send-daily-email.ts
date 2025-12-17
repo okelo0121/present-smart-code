@@ -2,6 +2,7 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { Resend } from 'resend';
+// Import User FIRST to ensure schema is registered before Teacher uses it in populate
 import { User } from '../models/User';
 import { Teacher } from '../models/Teacher';
 import { Student } from '../models/Student';
@@ -40,9 +41,10 @@ async function sendDailyEmails() {
         await mongoose.connect(MONGODB_URI!);
         console.log('Connected to MongoDB.');
 
-        // Find all teachers
-        const teachers = await Teacher.find().populate('userId');
-        console.log(`Found ${teachers.length} teachers.`);
+        // Find all teachers and filter by userType
+        const allTeachers = await Teacher.find().populate({ path: 'userId', model: User });
+        const teachers = allTeachers.filter(t => (t.userId as any)?.userType === 'teacher');
+        console.log(`Found ${teachers.length} teachers (filtered from ${allTeachers.length} total profiles).`);
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
