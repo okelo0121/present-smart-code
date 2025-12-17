@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 export interface TokenPayload {
   userId: string;
@@ -8,12 +7,16 @@ export interface TokenPayload {
   userType: 'teacher' | 'student';
 }
 
+function getSecret(): string {
+  return process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+}
+
 export function generateToken(payload: TokenPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign(payload, getSecret(), { expiresIn: '7d' });
 }
 
 export function verifyToken(token: string): TokenPayload {
-  const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
+  const decoded = jwt.verify(token, getSecret()) as TokenPayload;
   return decoded;
 }
 

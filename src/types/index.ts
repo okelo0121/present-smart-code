@@ -8,7 +8,7 @@ export interface User {
 
 export interface Teacher {
     _id: string;
-    userId: string;
+    userId: string | { _id: string; avatar?: string; email: string; name: string };
     name: string;
     email: string;
     department: string;
@@ -18,6 +18,7 @@ export interface Teacher {
 
 export interface Student {
     _id: string;
+    userId?: string | { _id: string; avatar?: string };
     name: string;
     email: string;
     class: string;

@@ -1,32 +1,31 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Mail, GraduationCap, Calendar, Camera, Loader2 } from "lucide-react";
-import { Teacher } from "@/types";
+import { Users, Mail, GraduationCap, Calendar, Camera, Loader2, BookOpen } from "lucide-react";
+// We can assume Student type has similar structure or adapt it
+import { Student } from "@/types";
 import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthToken, useAuth } from "@/hooks/useAuth";
 
-interface TeacherProfileProps {
-    teacherData: Teacher | null;
+interface StudentProfileProps {
+    studentData: any; // Using any or specific Student type if flexible enough
     onProfileUpdate?: () => void;
 }
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '') + '/api';
-// Base URL for static images (root of backend)
 const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
 
-export const TeacherProfile = ({ teacherData, onProfileUpdate }: TeacherProfileProps) => {
+export const StudentProfile = ({ studentData, onProfileUpdate }: StudentProfileProps) => {
     const { toast } = useToast();
     const { updateUser } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploading, setUploading] = useState(false);
-    // Local state for avatar to update UI immediately after upload
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
-    // Derived avatar: Local state > teacherData populated avatar > null
+    // Derived avatar
     const currentAvatar = avatarUrl || (
-        typeof teacherData?.userId === 'object' && teacherData.userId.avatar
-            ? `${BASE_URL}/${teacherData.userId.avatar}`
+        typeof studentData?.userId === 'object' && studentData.userId.avatar
+            ? `${BASE_URL}/${studentData.userId.avatar}`
             : null
     );
 
@@ -34,7 +33,6 @@ export const TeacherProfile = ({ teacherData, onProfileUpdate }: TeacherProfileP
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Validation
         if (file.size > 2 * 1024 * 1024) {
             toast({
                 title: "Error",
@@ -58,11 +56,10 @@ export const TeacherProfile = ({ teacherData, onProfileUpdate }: TeacherProfileP
                 body: formData
             });
 
-            if (!response.ok) throw new Error('Failed to upload avatar'); // Corrected error message quote
+            if (!response.ok) throw new Error('Failed to upload avatar');
 
             const data = await response.json();
 
-            // Construct full URL
             setAvatarUrl(`${BASE_URL}/${data.avatar}`);
             updateUser({ avatar: data.avatar });
             if (onProfileUpdate) onProfileUpdate();
@@ -88,11 +85,11 @@ export const TeacherProfile = ({ teacherData, onProfileUpdate }: TeacherProfileP
             <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                     <Users className="w-5 h-5 text-education-primary" />
-                    <span>Teacher Information</span>
+                    <span>Student Information</span>
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-                {teacherData ? (
+                {studentData ? (
                     <div className="space-y-4">
                         <div className="flex items-center space-x-4">
                             <div className="relative group">
@@ -127,8 +124,8 @@ export const TeacherProfile = ({ teacherData, onProfileUpdate }: TeacherProfileP
                                 />
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold">{teacherData.name}</h3>
-                                <p className="text-muted-foreground">Teacher</p>
+                                <h3 className="text-xl font-bold">{studentData.name}</h3>
+                                <p className="text-muted-foreground">Student</p>
                             </div>
                         </div>
 
@@ -138,7 +135,7 @@ export const TeacherProfile = ({ teacherData, onProfileUpdate }: TeacherProfileP
                                     <Mail className="w-5 h-5 text-muted-foreground" />
                                     <div>
                                         <p className="text-sm text-muted-foreground">Email</p>
-                                        <p className="font-medium">{teacherData.email}</p>
+                                        <p className="font-medium">{studentData.email}</p>
                                     </div>
                                 </div>
 
@@ -147,7 +144,7 @@ export const TeacherProfile = ({ teacherData, onProfileUpdate }: TeacherProfileP
                                     <div>
                                         <p className="text-sm text-muted-foreground">Department</p>
                                         <Badge variant="outline" className="text-education-info border-education-info">
-                                            {teacherData.department}
+                                            {studentData.department || 'N/A'}
                                         </Badge>
                                     </div>
                                 </div>
@@ -155,15 +152,23 @@ export const TeacherProfile = ({ teacherData, onProfileUpdate }: TeacherProfileP
 
                             <div className="space-y-4">
                                 <div className="flex items-center space-x-3">
+                                    <BookOpen className="w-5 h-5 text-muted-foreground" />
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Class</p>
+                                        <p className="font-medium">{studentData.class || 'N/A'}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center space-x-3">
                                     <Calendar className="w-5 h-5 text-muted-foreground" />
                                     <div>
                                         <p className="text-sm text-muted-foreground">Joined</p>
                                         <p className="font-medium">
-                                            {new Date(teacherData.createdAt).toLocaleDateString('en-US', {
+                                            {studentData.createdAt ? new Date(studentData.createdAt).toLocaleDateString('en-US', {
                                                 year: 'numeric',
                                                 month: 'long',
                                                 day: 'numeric'
-                                            })}
+                                            }) : 'N/A'}
                                         </p>
                                     </div>
                                 </div>

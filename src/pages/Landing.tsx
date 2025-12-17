@@ -85,9 +85,9 @@ const Landing = () => {
       description: "Enterprise-grade security ensures your data is protected and accessible only to authorized users."
     },
     {
-      icon: Zap,
-      title: "Lightning Fast",
-      description: "Mark attendance in seconds with our streamlined, intuitive interface."
+      icon: BookOpen,
+      title: "Lesson Sharing",
+      description: "Share notes, slides, and resources directly with your class in the Student Portal."
     }
   ];
 

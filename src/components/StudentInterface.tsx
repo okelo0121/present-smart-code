@@ -15,6 +15,9 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, getAuthToken } from "@/hooks/useAuth";
+import { StudentProfile } from "./dashboard/StudentProfile";
+import { StudentLessons } from "./dashboard/StudentLessons";
+import { StudentCalendar } from "./dashboard/StudentCalendar";
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const API_URL = `${BASE_URL.replace(/\/$/, '')}/api`;
@@ -35,50 +38,50 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
   const { user } = useAuth();
 
   // Fetch student data and attendance history
+  const fetchStudentData = async () => {
+    if (!user) return;
+
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      // Fetch student info
+      const studentRes = await fetch(`${API_URL}/users/student/profile`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!studentRes.ok) throw new Error('Failed to fetch student profile');
+      const student = await studentRes.json();
+      setStudentInfo(student);
+
+      // Check if already marked today
+      const attendanceRes = await fetch(`${API_URL}/attendance/history`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!attendanceRes.ok) throw new Error('Failed to fetch attendance');
+      const records = await attendanceRes.json();
+
+      const today = new Date().toISOString().split('T')[0];
+      const todayRecord = records.find((r: any) =>
+        new Date(r.submittedAt).toISOString().split('T')[0] === today
+      );
+
+      setTodayMarked(!!todayRecord); // Keep this for status card
+      setAttendanceHistory(records || []);
+    } catch (error: any) {
+      console.error('Error fetching student data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load your information. Please refresh the page.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchStudentData = async () => {
-      if (!user) return;
-
-      try {
-        const token = getAuthToken();
-        if (!token) return;
-
-        // Fetch student info
-        const studentRes = await fetch(`${API_URL}/users/student/profile`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!studentRes.ok) throw new Error('Failed to fetch student profile');
-        const student = await studentRes.json();
-        setStudentInfo(student);
-
-        // Check if already marked today
-        const attendanceRes = await fetch(`${API_URL}/attendance/history`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!attendanceRes.ok) throw new Error('Failed to fetch attendance');
-        const records = await attendanceRes.json();
-
-        const today = new Date().toISOString().split('T')[0];
-        const todayRecord = records.find((r: any) =>
-          new Date(r.submittedAt).toISOString().split('T')[0] === today
-        );
-
-        setTodayMarked(!!todayRecord); // Keep this for status card
-        setAttendanceHistory(records || []);
-      } catch (error: any) {
-        console.error('Error fetching student data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load your information. Please refresh the page.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchStudentData();
   }, [user, toast]);
 
@@ -214,6 +217,32 @@ export const StudentInterface = ({ activeView }: StudentInterfaceProps) => {
   const presentDays = attendanceHistory.length;
   const totalDays = attendanceHistory.length;
   const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+
+  if (activeView === 'profile') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-foreground">My Profile</h2>
+          <Badge variant="outline" className="text-education-info border-education-info">
+            {studentInfo?.department || 'Student'}
+          </Badge>
+        </div>
+
+        <StudentProfile
+          studentData={studentInfo}
+          onProfileUpdate={fetchStudentData}
+        />
+      </div>
+    );
+  }
+
+  if (activeView === 'lessons') {
+    return <StudentLessons />;
+  }
+
+  if (activeView === 'calendar') {
+    return <StudentCalendar />;
+  }
 
   if (activeView === 'enter-code') {
     return (

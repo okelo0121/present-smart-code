@@ -5,6 +5,7 @@ interface AuthUser {
   email: string;
   name: string;
   userType: 'teacher' | 'student';
+  avatar?: string;
   emailVerified: boolean;
 }
 
@@ -13,6 +14,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, metadata?: { name: string; userType: 'teacher' | 'student'; phone?: string }, inviteToken?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
+  updateUser: (updates: Partial<AuthUser>) => void;
   loading: boolean;
 }
 
@@ -117,12 +119,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const updateUser = (updates: Partial<AuthUser>) => {
+    if (user) {
+      const updatedUser = { ...user, ...updates };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
       signUp,
       signIn,
       signOut,
+      updateUser,
       loading
     }}>
       {children}

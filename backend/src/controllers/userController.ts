@@ -8,7 +8,7 @@ import { AuthRequest } from '../middleware/auth';
 
 export async function getTeacherProfile(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const teacher = await Teacher.findOne({ userId: req.userId });
+    const teacher = await Teacher.findOne({ userId: req.userId }).populate('userId');
     if (!teacher) {
       res.status(404).json({ error: 'Teacher profile not found' });
       return;
@@ -107,7 +107,9 @@ export async function inviteStudent(req: AuthRequest, res: Response): Promise<vo
 
 export async function getStudentProfile(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const student = await Student.findOne({ userId: req.userId }).populate('teacherId');
+    const student = await Student.findOne({ userId: req.userId })
+      .populate('teacherId')
+      .populate('userId');
     if (!student) {
       res.status(404).json({ error: 'Student profile not found' });
       return;
@@ -117,5 +119,40 @@ export async function getStudentProfile(req: AuthRequest, res: Response): Promis
   } catch (error) {
     console.error('Get student error:', error);
     res.status(500).json({ error: 'Failed to get student profile' });
+  }
+}
+
+export async function uploadAvatar(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: 'No file uploaded' });
+      return;
+    }
+
+    const User = require('../models/User').User; // Dynamic import to avoid circular dependency if any
+
+    // Normalize path (remove 'backend\' or 'backend/' if present in path, ensure forward slashes)
+    // The path stored should be relative to server root, e.g., "uploads/profiles/filename.jpg"
+    // req.file.path might be "uploads\profiles\filename.jpg" on Windows
+    const avatarPath = req.file.path.replace(/\\/g, '/');
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { avatar: avatarPath },
+      { new: true }
+    );
+
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    res.json({
+      message: 'Avatar uploaded successfully',
+      avatar: avatarPath
+    });
+  } catch (error) {
+    console.error('Upload avatar error:', error);
+    res.status(500).json({ error: 'Failed to upload avatar' });
   }
 }

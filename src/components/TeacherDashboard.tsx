@@ -14,6 +14,9 @@ import { StudentsByClass } from "./dashboard/StudentsByClass";
 import { RecentAttendance } from "./dashboard/RecentAttendance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { AnalyticsDashboard } from "./dashboard/AnalyticsDashboard";
+import { ReportsView } from "./dashboard/ReportsView";
+import { StudentDetailView } from "./dashboard/StudentDetailView";
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const API_URL = `${BASE_URL.replace(/\/$/, '')}/api`;
@@ -35,6 +38,7 @@ export const TeacherDashboard = ({ activeView, onViewChange }: TeacherDashboardP
   const [attendanceData, setAttendanceData] = useState<AttendanceStats[]>([]);
   const [studentsByClass, setStudentsByClass] = useState<Record<string, number>>({});
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [presentStudentIds, setPresentStudentIds] = useState<string[]>([]);
   const [attendanceFilter, setAttendanceFilter] = useState<'present' | 'absent' | null>(null);
   const { toast } = useToast();
@@ -119,60 +123,60 @@ export const TeacherDashboard = ({ activeView, onViewChange }: TeacherDashboardP
     }
   };
 
+  const fetchTeacherData = async () => {
+    if (!user) return;
+
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      // Fetch teacher profile
+      const teacherRes = await fetch(`${API_URL}/users/teacher/profile`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!teacherRes.ok) throw new Error('Failed to fetch teacher profile');
+      const teacher = await teacherRes.json();
+      setTeacherData(teacher);
+
+      // Fetch students
+      const studentsRes = await fetch(`${API_URL}/users/teacher/students`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!studentsRes.ok) throw new Error('Failed to fetch students');
+      const studentsData = await studentsRes.json();
+      setStudents(studentsData);
+      setTotalStudents(studentsData.length);
+
+      // Count students by class
+      const classCounts: Record<string, number> = {};
+      studentsData.forEach((student: Student) => {
+        const className = student.class || 'Unassigned';
+        classCounts[className] = (classCounts[className] || 0) + 1;
+      });
+      setStudentsByClass(classCounts);
+
+      // Fetch attendance stats
+      const statsRes = await fetch(`${API_URL}/attendance/stats`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!statsRes.ok) throw new Error('Failed to fetch attendance stats');
+      const stats = await statsRes.json();
+      setAttendanceData(stats.stats || []);
+
+      // Initial population of studentsPresent
+      if (stats.stats && stats.stats.length > 0) {
+        setStudentsPresent(stats.stats[0].present);
+      }
+    } catch (error) {
+      console.error('Error fetching teacher data:', error);
+    }
+  };
+
   // Effect: Fetch Teacher Data & Students (Initial Load)
   useEffect(() => {
-    const fetchTeacherData = async () => {
-      if (!user) return;
-
-      try {
-        const token = getAuthToken();
-        if (!token) return;
-
-        // Fetch teacher profile
-        const teacherRes = await fetch(`${API_URL}/users/teacher/profile`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!teacherRes.ok) throw new Error('Failed to fetch teacher profile');
-        const teacher = await teacherRes.json();
-        setTeacherData(teacher);
-
-        // Fetch students
-        const studentsRes = await fetch(`${API_URL}/users/teacher/students`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!studentsRes.ok) throw new Error('Failed to fetch students');
-        const studentsData = await studentsRes.json();
-        setStudents(studentsData);
-        setTotalStudents(studentsData.length);
-
-        // Count students by class
-        const classCounts: Record<string, number> = {};
-        studentsData.forEach((student: Student) => {
-          const className = student.class || 'Unassigned';
-          classCounts[className] = (classCounts[className] || 0) + 1;
-        });
-        setStudentsByClass(classCounts);
-
-        // Fetch attendance stats
-        const statsRes = await fetch(`${API_URL}/attendance/stats`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!statsRes.ok) throw new Error('Failed to fetch attendance stats');
-        const stats = await statsRes.json();
-        setAttendanceData(stats.stats || []);
-
-        // Initial population of studentsPresent
-        if (stats.stats && stats.stats.length > 0) {
-          setStudentsPresent(stats.stats[0].present);
-        }
-      } catch (error) {
-        console.error('Error fetching teacher data:', error);
-      }
-    };
-
     fetchTeacherData();
   }, [user]);
 
@@ -237,6 +241,50 @@ export const TeacherDashboard = ({ activeView, onViewChange }: TeacherDashboardP
 
     return () => clearInterval(interval);
   }, [teacherData]);
+
+  // Handle Manual Attendance Update
+  const handleUpdateAttendance = async (studentId: string, status: 'present' | 'absent') => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/attendance/manual`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ studentId, status })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update attendance');
+      }
+
+      const result = await response.json();
+
+      toast({
+        title: "Success",
+        description: result.message,
+      });
+
+      // Refresh Stats immediately
+      if (status === 'present') {
+        setPresentStudentIds(prev => [...prev, studentId]);
+        setStudentsPresent(prev => prev + 1);
+      } else {
+        setPresentStudentIds(prev => prev.filter(id => id !== studentId));
+        setStudentsPresent(prev => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error('Error updating attendance:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update attendance status",
+        variant: "destructive"
+      });
+    }
+  };
 
 
   // --- Views ---
@@ -356,6 +404,7 @@ export const TeacherDashboard = ({ activeView, onViewChange }: TeacherDashboardP
                   onViewChange?.('dashboard');
                   setAttendanceFilter(null);
                   setSelectedClass(null);
+                  setSelectedStudentId(null);
                 }} className="gap-2">
                   <ArrowLeft className="w-4 h-4" />
                   Back to Dashboard
@@ -374,7 +423,15 @@ export const TeacherDashboard = ({ activeView, onViewChange }: TeacherDashboardP
           </div>
         </div>
 
-        <StudentList students={filteredStudents} />
+        <StudentList
+          students={filteredStudents}
+          presentStudentIds={presentStudentIds}
+          onUpdateAttendance={handleUpdateAttendance}
+          onStudentClick={(id) => {
+            setSelectedStudentId(id);
+            onViewChange?.('student-detail');
+          }}
+        />
       </div>
     );
   }
@@ -389,8 +446,31 @@ export const TeacherDashboard = ({ activeView, onViewChange }: TeacherDashboardP
           </Badge>
         </div>
 
-        <TeacherProfile teacherData={teacherData} />
+        <TeacherProfile
+          teacherData={teacherData}
+          onProfileUpdate={fetchTeacherData}
+        />
       </div>
+    );
+  }
+
+  if (activeView === 'analytics') {
+    return <AnalyticsDashboard />;
+  }
+
+  if (activeView === 'reports') {
+    return <ReportsView />;
+  }
+
+  if (activeView === 'student-detail' && selectedStudentId) {
+    return (
+      <StudentDetailView
+        studentId={selectedStudentId}
+        onBack={() => {
+          setSelectedStudentId(null);
+          onViewChange?.('students');
+        }}
+      />
     );
   }
 

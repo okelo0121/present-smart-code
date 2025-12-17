@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import path from 'path';
 
 // Load environment variables FIRST, before any other imports
 dotenv.config();
@@ -56,6 +57,9 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files (uploads)
+app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
 
 // Request logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {

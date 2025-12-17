@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookOpen, Users, BarChart3, Settings, User, LogOut, UserPlus, Menu } from "lucide-react";
+import { BookOpen, Users, BarChart3, Settings, User, LogOut, UserPlus, Menu, Calendar, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,12 +37,17 @@ export const Layout = ({ children, userType, activeView, onViewChange }: LayoutP
     { id: 'post-lesson', label: 'Post Lesson', icon: BookOpen },
     { id: 'students', label: 'Students', icon: Users },
     { id: 'profile', label: 'Profile', icon: User },
+    // Reports label is existing, I'll add Analytics before/after, let's replace Reports label visually or add new
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
   ];
 
   const studentNavItems = [
-    { id: 'enter-code', label: 'Enter Code', icon: BookOpen },
-    { id: 'attendance', label: 'My Attendance', icon: BarChart3 },
+    { id: 'enter-code', label: 'Mark Attendance', icon: BookOpen },
+    { id: 'lessons', label: 'My Classes', icon: FileText },
+    { id: 'attendance', label: 'My History', icon: BarChart3 },
+    { id: 'calendar', label: 'Calendar', icon: Calendar },
+    { id: 'profile', label: 'Profile', icon: User },
   ];
 
   const navItems = userType === 'teacher' ? teacherNavItems : studentNavItems;
@@ -112,9 +117,24 @@ export const Layout = ({ children, userType, activeView, onViewChange }: LayoutP
               <Badge variant="secondary" className="capitalize hidden sm:inline-flex">
                 {userType}
               </Badge>
-              <span className="text-sm text-muted-foreground hidden md:block">
-                {user?.email}
-              </span>
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-muted-foreground hidden md:block">
+                  {user?.email}
+                </span>
+                {user?.avatar ? (
+                  <div className="w-8 h-8 rounded-full overflow-hidden border border-border">
+                    <img
+                      src={(import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '') + '/' + user.avatar}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
               <Button variant="ghost" size="icon" onClick={handleSignOut}>
                 <LogOut className="w-5 h-5" />
               </Button>

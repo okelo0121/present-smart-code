@@ -1,5 +1,5 @@
 
-import { BarChart3, CheckCircle2, ArrowRight, MoreHorizontal, TrendingUp, Users } from "lucide-react";
+import { BarChart3, CheckCircle2, ArrowRight, MoreHorizontal, TrendingUp, Users, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -202,6 +202,93 @@ export function FeatureSpotlights() {
                         >
                             View Sample Reports <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                         </Button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Spotlight 3: Student Portal (Web/Mobile Visual) */}
+            <div className="grid lg:grid-cols-2 gap-12 md:gap-24 items-center">
+                <div className="order-2 lg:order-2 space-y-8">
+                    <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5">
+                        <Users className="w-3 h-3 mr-1" /> Student Portal
+                    </Badge>
+                    <h3 className="text-3xl md:text-5xl font-bold leading-tight">
+                        Empower Your <br />
+                        <span className="text-primary">Students</span>
+                    </h3>
+                    <p className="text-xl text-muted-foreground leading-relaxed">
+                        Keep students in the loop with a dedicated portal. They can view shared lesson materials,
+                        track their own attendance history, and see "My Classes" on a visual calendar.
+                        No more "Was I present?" emails.
+                    </p>
+                    <ul className="space-y-4 pt-4">
+                        <li className="flex items-center gap-3">
+                            <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0" />
+                            <span className="text-lg">Share Lesson Notes & Slides</span>
+                        </li>
+                        <li className="flex items-center gap-3">
+                            <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0" />
+                            <span className="text-lg">Visual Attendance Calendar</span>
+                        </li>
+                        <li className="flex items-center gap-3">
+                            <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0" />
+                            <span className="text-lg">Transparent Record Keeping</span>
+                        </li>
+                    </ul>
+                </div>
+
+                {/* Mock Student Portal UI */}
+                <div className="order-1 lg:order-1 relative flex justify-center lg:justify-end pr-0 lg:pr-12">
+                    <div className="relative w-full max-w-[320px]">
+                        {/* Abstract Shapes */}
+                        <div className="absolute -top-10 -right-10 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
+                        <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+
+                        <Card className="p-4 bg-background/80 backdrop-blur-sm border-border/50 shadow-2xl rounded-2xl overflow-hidden relative z-10">
+                            <div className="space-y-6">
+                                {/* Header Mock */}
+                                <div className="flex items-center justify-between border-b pb-4">
+                                    <div className="space-y-1">
+                                        <div className="h-2 w-24 bg-primary/20 rounded" />
+                                        <div className="h-4 w-40 bg-primary rounded" />
+                                    </div>
+                                    <div className="w-10 h-10 rounded-full bg-primary/10" />
+                                </div>
+
+                                {/* Calendar/History Mock */}
+                                <div className="grid grid-cols-7 gap-2 text-center text-xs text-muted-foreground">
+                                    {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(d => <div key={d}>{d}</div>)}
+                                    {Array.from({ length: 28 }).map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className={`aspect-square rounded-full flex items-center justify-center text-[10px] 
+                                            ${[2, 4, 7, 9, 11, 14, 16, 18, 21, 23, 25].includes(i) ? 'bg-green-500 text-white font-bold' :
+                                                    [12, 19].includes(i) ? 'bg-red-100 text-red-500' : 'hover:bg-muted'
+                                                }`}
+                                        >
+                                            {[2, 4, 7, 9, 11, 14, 16, 18, 21, 23, 25].includes(i) ? '✓' : i + 1}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Lesson Card Mock */}
+                                <div className="bg-gradient-to-r from-primary/5 to-transparent p-4 rounded-xl border border-primary/10">
+                                    <div className="flex gap-3">
+                                        <div className="w-10 h-10 bg-white dark:bg-gray-800 rounded-lg shadow-sm flex items-center justify-center">
+                                            <div className="w-6 h-6 bg-primary/20 rounded" />
+                                        </div>
+                                        <div className="space-y-2 flex-1">
+                                            <div className="h-4 w-3/4 bg-primary/20 rounded" />
+                                            <div className="h-2 w-full bg-muted rounded" />
+                                            <div className="flex gap-2 pt-2">
+                                                <div className="h-6 w-16 bg-blue-100 dark:bg-blue-900/30 rounded-full" />
+                                                <div className="h-6 w-16 bg-purple-100 dark:bg-purple-900/30 rounded-full" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
                     </div>
                 </div>
             </div>
