@@ -20,7 +20,7 @@ jobs:
 
       - name: Install Dependencies
         working-directory: ./backend
-        run: npm ci
+        run: npm install
 
       - name: Send Monthly Email
         working-directory: ./backend
